@@ -34,7 +34,7 @@ throw_not_implemented_error() {
 generate_proto_files() {
   echo "Generating proto files in"
 
-  mkdir -p ${GENERATED_CODE_DIRECTORY}/api
+  mkdir -p ${GENERATED_CODE_DIRECTORY}/generated
   for x in $(find ./proto -iname "*.proto");
   do
     if [[ "$x" == *'validate.proto' ]]; then
@@ -43,19 +43,19 @@ generate_proto_files() {
 
     protoc \
       --proto_path=./proto \
-      --go_out=paths=source_relative:${GENERATED_CODE_DIRECTORY}/api \
-      --go-grpc_out=${GENERATED_CODE_DIRECTORY}/api \
+      --go_out=paths=source_relative:${GENERATED_CODE_DIRECTORY}/generated \
+      --go-grpc_out=${GENERATED_CODE_DIRECTORY}/generated \
       --go-grpc_opt=paths=source_relative \
-      --validate_out="lang=go,paths=source_relative:${GENERATED_CODE_DIRECTORY}/api" \
+      --validate_out="lang=go,paths=source_relative:${GENERATED_CODE_DIRECTORY}/generated" \
       $x;
 
     echo "Generated grpc code for $x";
   done
 
-  for x in $(find ./pkg/api -iname "*.go");
+  for x in $(find ./pkg/generated -iname "*.go");
   do
     if [ ${OPERATING_SYSTEM} == "Darwin" ]; then
-      sed -i '' "s gitlab.com/sensory-cloud/server/titan.git/pkg github.com/Sensory-Cloud/go-sdk/pkg g" $x
+      sed -i '' "s gitlab.com/sensory-cloud/server/titan.git/pkg/api github.com/Sensory-Cloud/go-sdk/pkg/generated g" $x
     else
       sed -i "s/BuildVersion string = \"[^\"]*\"/BuildVersion string = \"${version}\"/" ${VERSION_FILE}
     fi

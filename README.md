@@ -1,92 +1,951 @@
-# Go SDK
+# Go SDK SDK
 
-Sensory Cloud Go SDK
+Sensory Cloud Go SDK documentation.
 
-## Getting started
+## General Information
 
-To make it easy for you to get started with GitLab, here's a list of recommended next steps.
+Before getting started, you must spin up a Sensory Cloud inference server or have Sensory spin one up for you. You must also have the following pieces of information:
+* Your inference server URL
+* Your Sensory Tenant ID (UUID)
+* Your configured secret key used to register OAuth clients
 
-Already a pro? Just edit this README.md and make it your own. Want to make it easy? [Use the template at the bottom](#editing-this-readme)!
+## Checking Server Health
 
-## Add your files
+It's important to check the health of your Sensory Inference server. You can do so via the following:
 
-- [ ] [Create](https://docs.gitlab.com/ee/user/project/repository/web_editor.html#create-a-file) or [upload](https://docs.gitlab.com/ee/user/project/repository/web_editor.html#upload-a-file) files
-- [ ] [Add files using the command line](https://docs.gitlab.com/ee/gitlab-basics/add-file.html#add-a-file-using-the-command-line) or push an existing Git repository with the following command:
+```csharp
+// Tenant ID granted by Sensory Inc.
+string sensoryTenantId = "f6580f3b-dcaf-465b-867e-59fbbb0ab3fc";
+string deviceId = "a-hardware-identifier-unique-to-your-device";
+
+// Configuration specific to your tenant
+Config config = new Config("your-inference-server.com", sensoryTenantId, deviceId).Connect();
+
+HealthService healthService = new HealthService(config);
+
+ServerHealthResponse serverHealth = healthService.GetHealth();
+```
+
+## Secure Credential Store
+
+ISecureCredential is an interface that store and serves your OAuth credentials (clientId and clientSecret).
+ISecureCredential must be implemented by you and the credentials should be persisted in a secure manner, such as in an encrypted database.
+OAuth credentials should be generated one time per unique machine.
+
+A crude example of ISecureCredential is as follows:
+
+```csharp
+public class SecureCredentialStoreExample : ISecureCredentialStore
+{
+    public string ClientId { get; set; }
+    public string ClientSecret { get; set; }
+
+    public string GetClientId()
+    {
+        return ClientId;
+    }
+
+    public string GetClientSecret()
+    {
+        return ClientSecret;
+    }
+}
+```
+
+## Registering OAuth Credentials
+
+OAuth credentials should be registered once per unique machine. Registration is very simple, and provided as part of the SDK.
+
+The below example shows how to create an OAuthService and register a client for the first time.
+
+```csharp
+// Tenant ID granted by Sensory Inc.
+string sensoryTenantId = "f6580f3b-dcaf-465b-867e-59fbbb0ab3fc";
+string deviceId = "a-hardware-identifier-unique-to-your-device";
+
+// Configuration specific to your tenant
+Config config = new Config("your-inference-server.com", sensoryTenantId, deviceId).Connect();
+
+ISecureCredentialStore credentialStore = new SecureCredentialStoreExample();
+OauthService oauthService = new OauthService(config, credentialStore);
+
+// Generate cryptographically random credentials
+OauthClient oAuthClient = oauthService.GenerateCredentials();
+
+// Register credentials with Sensory Cloud
+var friendlyDeviceName = "Server 1";
+
+// OAuth registration can take one of two paths, the insecure path that uses a shared secret between this device and your instance of Sensory Cloud
+// or asymmetric public / private keypair registration.
+
+// Path 1 --------
+// Insecure authorization credential as configured on your instance of Sensory Cloud
+var insecureSharedSecret = "password";
+oauthService.Register(friendlyDeviceName, insecureSharedSecret);
+
+// Path 2 --------
+// Secure Public / private keypair registration using Portable.BouncyCastle and ScottBrady.IdentityModel
+
+// Keypair generation happens out of band and long before a registration occurs. The below example shows how to generate and sign an enrollment JWT as a comprehensive example.
+var keyPairGenerator = new Ed25519KeyPairGenerator();
+keyPairGenerator.Init(new Ed25519KeyGenerationParameters(new SecureRandom()));
+var keyPair = keyPairGenerator.GenerateKeyPair();
+
+var privateKey = (Ed25519PrivateKeyParameters)keyPair.Private;
+
+// Public key is persisted in Sensory Cloud via the Management interface
+var publicKey = (Ed25519PublicKeyParameters)keyPair.Public;
+
+var handler = new JsonWebTokenHandler();
+
+var token = handler.CreateToken(new SecurityTokenDescriptor
+{
+    Issuer = "sensory-sdk",
+    Audience = "sensory-cloud",
+    Subject = new ClaimsIdentity(new[] { new Claim("clientId", oAuthClient.ClientId) }),
+
+    // using JOSE algorithm "EdDSA"
+    SigningCredentials = new SigningCredentials(
+    new EdDsaSecurityKey(privateKey), ExtendedSecurityAlgorithms.EdDsa)
+});
+
+oauthService.Register(friendlyDeviceName, token);
+```
+
+## Renewing Credentials
+
+If you are evaluting Sensory Cloud as part of a Proof of Concept then likely the token granted to you will expire.
+Should the secret expire, you can request a new from from Sensory. You will need to renew your credential via the OAuth service.
+You can always renew your secret before it has expired to ensure you have 0 downtime.
 
 ```
-cd existing_repo
-git remote add origin https://gitlab.com/sensory-cloud/sdk/go-sdk.git
-git branch -M main
-git push -uf origin main
+oauthService.RenewDeviceCredential(newToken);
 ```
 
-## Integrate with your tools
 
-- [ ] [Set up project integrations](https://gitlab.com/sensory-cloud/sdk/go-sdk/-/settings/integrations)
+## Creating a TokenManager
 
-## Collaborate with your team
+The TokenManger class handles requesting OAuth tokens when necessary.
 
-- [ ] [Invite team members and collaborators](https://docs.gitlab.com/ee/user/project/members/)
-- [ ] [Create a new merge request](https://docs.gitlab.com/ee/user/project/merge_requests/creating_merge_requests.html)
-- [ ] [Automatically close issues from merge requests](https://docs.gitlab.com/ee/user/project/issues/managing_issues.html#closing-issues-automatically)
-- [ ] [Enable merge request approvals](https://docs.gitlab.com/ee/user/project/merge_requests/approvals/)
-- [ ] [Automatically merge when pipeline succeeds](https://docs.gitlab.com/ee/user/project/merge_requests/merge_when_pipeline_succeeds.html)
+```csharp
+// Tenant ID granted by Sensory Inc.
+string sensoryTenantId = "f6580f3b-dcaf-465b-867e-59fbbb0ab3fc";
+string deviceId = "a-hardware-identifier-unique-to-your-device";
 
-## Test and Deploy
+// Configuration specific to your tenant
+Config config = new Config("your-inference-server.com", sensoryTenantId, deviceId).Connect();
 
-Use the built-in continuous integration in GitLab.
+ISecureCredentialStore credentialStore = new SecureCredentialStoreExample();
+IOAuthService oAuthService = new OAuthService(config, credentialStore);
+ITokenManager tokenManager = new TokenManager(OAuthService);
 
-- [ ] [Get started with GitLab CI/CD](https://docs.gitlab.com/ee/ci/quick_start/index.html)
-- [ ] [Analyze your code for known vulnerabilities with Static Application Security Testing(SAST)](https://docs.gitlab.com/ee/user/application_security/sast/)
-- [ ] [Deploy to Kubernetes, Amazon EC2, or Amazon ECS using Auto Deploy](https://docs.gitlab.com/ee/topics/autodevops/requirements.html)
-- [ ] [Use pull-based deployments for improved Kubernetes management](https://docs.gitlab.com/ee/user/clusters/agent/)
-- [ ] [Set up protected environments](https://docs.gitlab.com/ee/ci/environments/protected_environments.html)
+// Obtain OAuth token from Sensory Cloud
+string token = tokenManager.GetToken();
 
-***
+return tokenManager;
 
-# Editing this README
+```
 
-When you're ready to make this README your own, just edit this file and use the handy template below (or feel free to structure it however you want - this is just a starting point!).  Thank you to [makeareadme.com](https://www.makeareadme.com/) for this template.
+## Creating an AudioService
 
-## Suggestions for a good README
-Every project is different, so consider which of these sections apply to yours. The sections used in the template are suggestions for most open source projects. Also keep in mind that while a README can be too long and detailed, too long is better than too short. If you think your README is too long, consider utilizing another form of documentation rather than cutting out information.
+AudioService provides methods to stream audio to Sensory Cloud. It is recommended to only have 1 instance of AudioService
+instantiated per Config. In most circumstances you will only ever have one Config, unless your app communicates with
+multiple Sensory Cloud servers.
 
-## Name
-Choose a self-explaining name for your project.
+```csharp
+public static AudioService GetAudioService()
+{
+    // Tenant ID granted by Sensory Inc.
+    string sensoryTenantId = "f6580f3b-dcaf-465b-867e-59fbbb0ab3fc";
+    string deviceId = "a-hardware-identifier-unique-to-your-device";
 
-## Description
-Let people know what your project can do specifically. Provide context and add a link to any reference visitors might be unfamiliar with. A list of Features or a Background subsection can also be added here. If there are alternatives to your project, this is a good place to list differentiating factors.
+    // Configuration specific to your tenant
+    Config config = new Config("your-inference-server.com", sensoryTenantId, deviceId).Connect();
 
-## Badges
-On some READMEs, you may see small images that convey metadata, such as whether or not all the tests are passing for the project. You can use Shields to add some to your README. Many services also have instructions for adding a badge.
+    ISecureCredentialStore credentialStore = new SecureCredentialStoreExample();
+    IOAuthService oAuthService = new OAuthService(config, credentialStore);
+    ITokenManager tokenManager = new TokenManager(OAuthService);
 
-## Visuals
-Depending on what you are making, it can be a good idea to include screenshots or even a video (you'll frequently see GIFs rather than actual videos). Tools like ttygif can help, but check out Asciinema for a more sophisticated method.
+    return new AudioService(config, tokenManager);
+}
 
-## Installation
-Within a particular ecosystem, there may be a common way of installing things, such as using Yarn, NuGet, or Homebrew. However, consider the possibility that whoever is reading your README is a novice and would like more guidance. Listing specific steps helps remove ambiguity and gets people to using your project as quickly as possible. If it only runs in a specific context like a particular programming language version or operating system or has dependencies that have to be installed manually, also add a Requirements subsection.
+```
 
-## Usage
-Use examples liberally, and show the expected output if you can. It's helpful to have inline the smallest example of usage that you can demonstrate, while providing links to more sophisticated examples if they are too long to reasonably include in the README.
+### Obtaining Audio Models
 
-## Support
-Tell people where they can go to for help. It can be any combination of an issue tracker, a chat room, an email address, etc.
+Certain audio models are available to your application depending on the models that are configured for your instance of Sensory Cloud.
+In order to determine which audio models are accessible to you, you can execute the below code.
 
-## Roadmap
-If you have ideas for releases in the future, it is a good idea to list them in the README.
+```csharp
+AudioService audioService = GetAudioService();
+GetModelsResponse audioModels = audioService.GetModels();
+```
 
-## Contributing
-State if you are open to contributions and what your requirements are for accepting them.
+Audio models contain the following properties:
+* Name - the unique name tied to this model. Used when calling any other audio function.
+* IsEnrollable - indicates if the model can be enrolled into. Models that are enrollable can be used in the CreateEnrollment function.
+* ModelType - indicates the class of model and it's general function.
+* FixedPhrase - for speech-based models only. Indicates if a specific phrase must be said.
+* Samplerate - indicates the audio samplerate required by this model. Generally, the number will be 16000.
+* IsLivenessSupported - indicates if this model supports liveness for enrollment and authentication. Liveness provides an added layer of security by requring a users to speak random digits.
 
-For people who want to make changes to your project, it's helpful to have some documentation on how to get started. Perhaps there is a script that they should run or some environment variables that they need to set. Make these steps explicit. These instructions could also be useful to your future self.
+### Enrolling with Audio
 
-You can also document commands to lint the code or run tests. These steps help to ensure high code quality and reduce the likelihood that the changes inadvertently break something. Having instructions for running tests is especially helpful if it requires external setup, such as starting a Selenium server for testing in a browser.
+In order to enroll with audio, you must first ensure you have an enrollable model enabled for your Sensory Cloud instance. This can be obtained via the GetModels() request.
+Enrolling with audio uses a bi-directional streaming pattern to allow immediate feedback to the user during enrollment. It is important to save the enrollmentId
+in order to perform authentication against it in the future.
 
-## Authors and acknowledgment
-Show your appreciation to those who have contributed to the project.
+```csharp
+AudioService audioService = GetAudioService();
+AudioConfig audioConfig = new AudioConfig
+{
+    Encoding = AudioConfig.Types.AudioEncoding.Linear16,
+    AudioChannelCount = 1,
+    SampleRateHertz = 16000,
+    LanguageCode = "en-US",
+};
 
-## License
-For open source projects, say how it is licensed.
+// Set basic enrollment information
+string enrollmentDescription = "My Enrollment";
+string userId = "72f286b8-173f-436a-8869-6f7887789ee9";
+string modelName = "wakeword-16kHz-open_sesame.ubm";
+bool isLivenessEnabled = false;
 
-## Project status
-If you have run out of energy or time for your project, put a note at the top of the README saying that development has slowed down or stopped completely. Someone may choose to fork your project or volunteer to step in as a maintainer or owner, allowing your project to keep going. You can also make an explicit request for maintainers.
+// Stream is of type AsyncDuplexStreamingCall<CreateEnrollmentRequest, CreateEnrollmentResponse>
+var stream = await audioService.StreamEnrollment(
+    audioConfig,
+    enrollmentDescription,
+    userId,
+    modelName,
+    isLivenessEnabled
+    );
+
+// EnrollmentId if enrollment is successful
+string enrollmentId = null;
+
+// Start background task to receive messages from the cloud
+var readTask = Task.Run(async () =>
+{
+    try
+    {
+        while (await stream.ResponseStream.MoveNext())
+        {
+            // Response contains information about the enrollment status.
+            // For enrollments with liveness, there are two additional fields that are populated.
+            // * ModelPrompt - indicates what the user should say in order to proceed with the enrollment.
+            // * SectionPercentComplete - indicates the percentage of the current ModelPrompt that has been spoken.
+            CreateEnrollmentResponse response = stream.ResponseStream.Current;
+            enrollmentId = response.EnrollmentId;
+        }
+    }
+    catch (RpcException ex)
+    {
+        // Do something with the error - generally this is due to the server closing the stream
+    }
+
+});
+
+// Start blocking while streaming up audio data. If you have the entire audio file already you can ignore the while loop.
+while (String.IsNullOrEmpty(enrollmentId))
+{
+    // Populate with real audio data. This example creates an empty bytestring.
+    var lin16AudioData = Google.Protobuf.ByteString.Empty;
+    var message = new CreateEnrollmentRequest { AudioContent = lin16AudioData };
+
+    try
+    {
+        await stream.RequestStream.WriteAsync(message);
+    } catch (RpcException ex)
+    {
+        // Do something with the error. An error
+    }
+}
+
+await stream.RequestStream.CompleteAsync();
+await readTask;
+```
+
+### Authenticating with Audio
+
+Authenticating with audio is similar to enrollment, except now you have an enrollmentId to pass into the function.
+
+```csharp
+AudioService audioService = GetAudioService();
+AudioConfig audioConfig = new AudioConfig
+{
+    Encoding = AudioConfig.Types.AudioEncoding.Linear16,
+    AudioChannelCount = 1,
+    SampleRateHertz = 16000,
+    LanguageCode = "en-US",
+};
+
+// Set basic enrollment information
+string enrollmentId = "72f286b8-173f-436a-8869-6f7887789ee9";
+bool isLivenessEnabled = false;
+
+// Stream is of type AsyncDuplexStreamingCall<AuthenticateRequest, AuthenticateResponse>
+// You can also authenticate against an enrolment group by using the StreamGroupAuthentication method.
+var stream = await audioService.StreamAuthentication(
+    audioConfig,
+    enrollmentId,
+    isLivenessEnabled
+    );
+
+// Indicates if the authentication is successful
+bool authenticateSuccess = false;
+
+// Start background task to receive messages from the cloud
+var readTask = Task.Run(async () =>
+{
+    try
+    {
+        while (await stream.ResponseStream.MoveNext())
+        {
+            // Response contains information about the authentication status.
+            // For enrollments with liveness, there are two additional fields that are populated.
+            // * ModelPrompt - indicates what the user should say in order to proceed with the authentication.
+            // * SectionPercentComplete - indicates the percentage of the current ModelPrompt that has been spoken.
+            AuthenticateResponse response = stream.ResponseStream.Current;
+            authenticateSuccess = response.Success;
+        }
+    }
+    catch (RpcException ex)
+    {
+        // Do something with the error - generally this is due to the server closing the stream
+    }
+
+});
+
+// Start blocking while streaming up audio data. If you have the entire audio file already you can ignore the while loop.
+while (!authenticateSuccess)
+{
+    // Populate with real audio data. This example creates an empty bytestring.
+    var lin16AudioData = Google.Protobuf.ByteString.Empty;
+    var message = new AuthenticateRequest { AudioContent = lin16AudioData };
+
+    try
+    {
+        await stream.RequestStream.WriteAsync(message);
+    }
+    catch (RpcException ex)
+    {
+        // Do something with the error
+    }
+}
+
+await stream.RequestStream.CompleteAsync();
+await readTask;
+```
+
+### Audio events
+
+Audio events are used to recognize specific words, phrases, or sounds.
+
+The below example waits for a single event to be recognized and ends the stream.
+
+```csharp
+AudioService audioService = GetAudioService();
+AudioConfig audioConfig = new AudioConfig
+{
+    Encoding = AudioConfig.Types.AudioEncoding.Linear16,
+    AudioChannelCount = 1,
+    SampleRateHertz = 16000,
+    LanguageCode = "en-US",
+};
+
+// Set basic enrollment information
+string userId = "72f286b8-173f-436a-8869-6f7887789ee9";
+string modelName = "sound-16kHz-door_bell.trg";
+
+// Stream is of type AsyncDuplexStreamingCall<ValidateEventRequest, ValidateEventResponse>
+var stream = await audioService.StreamEvent(
+    audioConfig,
+    userId,
+    modelName
+    );
+
+// Indicates if the event is recognized
+bool eventRecognized = false;
+
+// Start background task to receive messages from the cloud
+var readTask = Task.Run(async () =>
+{
+    try
+    {
+        while (await stream.ResponseStream.MoveNext())
+        {
+            // Response contains information about the recognition.
+            ValidateEventResponse response = stream.ResponseStream.Current;
+            eventRecognized = response.Success;
+
+            // response.ResultId contains the specific sound that was heard in the case of combined models.
+        }
+    }
+    catch (RpcException ex)
+    {
+        // Do something with the error - generally this is due to the server closing the stream
+    }
+
+});
+
+// Start blocking while streaming up audio data. If you have the entire audio file already you can ignore the while loop.
+// Block until one event is recognized. This logic is totally up to your application.
+while (!eventRecognized)
+{
+    // Populate with real audio data. This example creates an empty bytestring.
+    var lin16AudioData = Google.Protobuf.ByteString.Empty;
+    var message = new ValidateEventRequest { AudioContent = lin16AudioData };
+
+    try
+    {
+        await stream.RequestStream.WriteAsync(message);
+    }
+    catch (RpcException ex)
+    {
+        // Do something with the error
+    }
+}
+
+await stream.RequestStream.CompleteAsync();
+await readTask;
+
+```
+
+The below example outlines how to stream a wav file in chunks to Sensory Cloud and process all events before closing the stream.
+
+```csharp
+AudioService audioService = new AudioService(config, tokenManager);
+AudioConfig audioConfig = new AudioConfig
+{
+    Encoding = AudioConfig.Types.AudioEncoding.Linear16,
+    AudioChannelCount = 1,
+    SampleRateHertz = 16000,
+    LanguageCode = "en-US",
+};
+
+// Print out available models
+var models = audioService.GetModels();
+Console.WriteLine($"Found {models.Models.Count} model(s): {models.Models}");
+
+// Set basic enrollment information
+// Set to userId in your system who is making the request
+string userId = "unique-user-id";
+string modelName = "sound-16kHz-combined.trg";
+
+// Stream is of type AsyncDuplexStreamingCall<ValidateEventRequest, ValidateEventResponse>
+var stream = await audioService.StreamEvent(audioConfig, userId, modelName);
+
+var results = new List<ValidateEventResponse>();
+
+// Start background task to receive messages from the cloud
+var readTask = Task.Run(async () =>
+{
+    try
+    {
+        while (await stream.ResponseStream.MoveNext())
+        {
+            // Response contains information about the recognition.
+            ValidateEventResponse response = stream.ResponseStream.Current;
+            //eventRecognized = response.Success;
+            if (response.Success)
+            {
+                Console.WriteLine($"Event recognized {response}");
+                results.Add(response);
+            }
+        }
+    }
+    catch (RpcException ex)
+    {
+        // Do something with the error - generally this is due to the server closing the stream
+        Console.WriteLine($"A server error occurred: {ex}");
+    }
+});
+
+// load wav file and cut out wav file header
+byte[] wavFile = File.ReadAllBytes(args[0])[44..];
+var bytesPerSample = 2;
+var chunkTimeSeconds = 0.100; // 100ms
+var bytesPerChunk = Convert.ToInt32(bytesPerSample * audioConfig.SampleRateHertz * chunkTimeSeconds);
+
+Console.WriteLine($"Uploading {args[0]} ({wavFile.Length} bytes) for recognition");
+
+// Start blocking while streaming up audio data in 100ms chunks.
+for (int index = 0; index < wavFile.Length; index += bytesPerChunk)
+{
+    int length = bytesPerChunk;
+    if (index + length > wavFile.Length - 1)
+    {
+        length = wavFile.Length - index - 1;
+    }
+
+    // Create audio message
+    // Could be more efficient than using a copy
+    var audioChunk = ByteString.CopyFrom(new ArraySegment<byte>(wavFile, index, length));
+    var message = new ValidateEventRequest { AudioContent = audioChunk };
+
+    try
+    {
+        await stream.RequestStream.WriteAsync(message);
+    }
+    catch (RpcException ex)
+    {
+        Console.WriteLine($"A client error occurred: {ex}");
+    }
+}
+
+await stream.RequestStream.CompleteAsync();
+await readTask;
+
+
+Console.WriteLine($"Sounds recognized:");
+results.ForEach((result) =>
+{
+    Console.WriteLine($"{result}");
+});
+```
+
+## CreateEnrolledEvent
+
+You can enroll your own event into the Sensory cloud system. The process is similar to biometric enrollment where you must
+play a sound or speak a particular phrase 4 or more times. This is usefull for recognizing sounds that are not offered by Sensory Cloud.
+
+```csharp
+AudioService audioService = GetAudioService();
+AudioConfig audioConfig = new AudioConfig
+{
+    Encoding = AudioConfig.Types.AudioEncoding.Linear16,
+    AudioChannelCount = 1,
+    SampleRateHertz = 16000,
+    LanguageCode = "en-US",
+};
+
+// Set basic enrollment information
+string enrollmentDescription = "My Enrollment";
+string userId = "72f286b8-173f-436a-8869-6f7887789ee9";
+string modelName = "wakeword-16kHz-open_sesame.ubm";
+
+// Stream is of type AsyncDuplexStreamingCall<CreateEnrollmentRequest, CreateEnrollmentResponse>
+var stream = await audioService.StreamCreateEnrolledEvent(
+    audioConfig,
+    enrollmentDescription,
+    userId,
+    modelName
+    );
+
+// EnrollmentId if enrollment is successful
+string enrollmentId = null;
+
+// Start background task to receive messages from the cloud
+var readTask = Task.Run(async () =>
+{
+    try
+    {
+        while (await stream.ResponseStream.MoveNext())
+        {
+            // Response contains information about the enrollment status.
+            // For enrollments with liveness, there are two additional fields that are populated.
+            // * ModelPrompt - indicaites what the user should say in order to proceed with the enrollment.
+            // * SectionPercentComplete - indicates the percentage of the current ModelPrompt that has been spoken.
+            CreateEnrollmentResponse response = stream.ResponseStream.Current;
+            enrollmentId = response.EnrollmentId;
+        }
+    }
+    catch (RpcException ex)
+    {
+        // Do something with the error - generally this is due to the server closing the stream
+    }
+
+});
+
+// Start blocking while streaming up audio data. If you have the entire audio file already you can ignore the while loop.
+while (String.IsNullOrEmpty(enrollmentId))
+{
+    // Populate with real audio data. This example creates an empty bytestring.
+    var lin16AudioData = Google.Protobuf.ByteString.Empty;
+    var message = new CreateEnrolledEventRequest { AudioContent = lin16AudioData };
+
+    try
+    {
+        await stream.RequestStream.WriteAsync(message);
+    }
+    catch (RpcException ex)
+    {
+        // Do something with the error. An error
+    }
+}
+
+await stream.RequestStream.CompleteAsync();
+await readTask;
+
+```
+
+### ValidateEnrolledEvent
+
+Once you've created an enroled event, you can listen for that event (or groups of events) by calling
+the ValidateEnrolledEvent function.
+
+```csharp
+AudioService audioService = GetAudioService();
+AudioConfig audioConfig = new AudioConfig
+{
+    Encoding = AudioConfig.Types.AudioEncoding.Linear16,
+    AudioChannelCount = 1,
+    SampleRateHertz = 16000,
+    LanguageCode = "en-US",
+};
+
+// Set basic enrollment information
+string enrollmentId = "72f286b8-173f-436a-8869-6f7887789ee9";
+
+// Stream is of type AsyncDuplexStreamingCall<AuthenticateRequest, AuthenticateResponse>
+// You can also authenticate against an enrolment group by using the StreamGroupAuthentication method.
+var stream = await audioService.StreamValidateEnrolledEvent(
+    audioConfig,
+    enrollmentId
+    );
+
+// Indicates if the authentication is successful
+bool done = false;
+
+// Start background task to receive messages from the cloud
+var readTask = Task.Run(async () =>
+{
+    try
+    {
+        while (await stream.ResponseStream.MoveNext())
+        {
+            // Response contains information about the authentication status.
+            // For enrollments with liveness, there are two additional fields that are populated.
+            // * ModelPrompt - indicaites what the user should say in order to proceed with the authentication.
+            // * SectionPercentComplete - indicates the percentage of the current ModelPrompt that has been spoken.
+            ValidateEnrolledEventResponse response = stream.ResponseStream.Current;
+
+            if (response.Success)
+            {
+                // Erolled Event was recognized
+                // response.EnrollmentId
+            }
+
+            // Set "done" to true to end the blocking on the client side
+        }
+    }
+    catch (RpcException ex)
+    {
+        // Do something with the error - generally this is due to the server closing the stream
+    }
+
+});
+
+// Start blocking while streaming up audio data. If you have the entire audio file already you can ignore the while loop.
+while (!done)
+{
+    // Populate with real audio data. This example creates an empty bytestring.
+    var lin16AudioData = Google.Protobuf.ByteString.Empty;
+    var message = new ValidateEnrolledEventRequest { AudioContent = lin16AudioData };
+
+    try
+    {
+        await stream.RequestStream.WriteAsync(message);
+    }
+    catch (RpcException ex)
+    {
+        // Do something with the error
+    }
+}
+
+await stream.RequestStream.CompleteAsync();
+await readTask;
+
+```
+
+### Transcription
+
+Transcription is used to convert audio into text.
+
+```csharp
+AudioService audioService = GetAudioService();
+AudioConfig audioConfig = new AudioConfig
+{
+    Encoding = AudioConfig.Types.AudioEncoding.Linear16,
+    AudioChannelCount = 1,
+    SampleRateHertz = 16000,
+    LanguageCode = "en-US",
+};
+
+// Set basic enrollment information
+string userId = "72f286b8-173f-436a-8869-6f7887789ee9";
+string modelName = "sound-16kHz-door_bell.trg";
+
+// Stream is of type AsyncDuplexStreamingCall<TranscribeRequest, TranscribeResponse>
+var stream = await audioService.StreamTranscription(
+    audioConfig,
+    userId,
+    modelName
+    );
+
+// Start background task to receive messages from the cloud
+var readTask = Task.Run(async () =>
+{
+    try
+    {
+        while (await stream.ResponseStream.MoveNext())
+        {
+            // Response contains the current transcription.
+            TranscribeResponse response = stream.ResponseStream.Current;
+        }
+    }
+    catch (RpcException ex)
+    {
+        // Do something with the error - generally this is due to the server closing the stream
+    }
+
+});
+
+// Start blocking while streaming up audio data. If you have the entire audio file already you can ignore the while loop.
+// Block until you are done sending audio.
+while (true)
+{
+    // Populate with real audio data. This example creates an empty bytestring.
+    var lin16AudioData = Google.Protobuf.ByteString.Empty;
+    var message = new TranscribeRequest { AudioContent = lin16AudioData };
+
+    try
+    {
+        await stream.RequestStream.WriteAsync(message);
+    }
+    catch (RpcException ex)
+    {
+        // Do something with the error
+    }
+}
+
+await stream.RequestStream.CompleteAsync();
+await readTask;
+```
+
+## Creating a VideoService
+
+VideoService provides methods to stream images to Sensory Cloud. It is recommended to only have 1 instance of VideoService
+instantiated per Config. In most circumstances you will only ever have one Config, unless your app communicates with
+multiple Sensory Cloud servers.
+
+```csharp
+// Tenant ID granted by Sensory Inc.
+string sensoryTenantId = "f6580f3b-dcaf-465b-867e-59fbbb0ab3fc";
+string deviceId = "a-hardware-identifier-unique-to-your-device";
+
+// Configuration specific to your tenant
+Config config = new Config("your-inference-server.com", sensoryTenantId, deviceId).Connect();
+
+ISecureCredentialStore credentialStore = new SecureCredentialStoreExample();
+IOAuthService oAuthService = new OAuthService(config, credentialStore);
+ITokenManager tokenManager = new TokenManager(OAuthService);
+
+return new VideoService(config, tokenManager);
+```
+
+### Obtaining Video Models
+
+Certain video models are available to your application depending on the models that are configured for your instance of Sensory Cloud.
+In order to determine which video models are accessible to you, you can execute the below code.
+
+```csharp
+VideoService videoService = GetVideoService();
+GetModelsResponse videoModels = videoService.GetModels();
+```
+
+Audio models contain the following properties:
+* Name - the unique name tied to this model. Used when calling any other video function.
+* IsEnrollable - indicates if the model can be enrolled into. Models that are enrollable can be used in the CreateEnrollment function.
+* ModelType - indicates the class of model and it's general function.
+* FixedObject - for recognition-based models only. Indicates if this model is built to recognize a specific object.
+* IsLivenessSupported - indicates if this model supports liveness for enrollment and authentication. Liveness provides an added layer of security.
+
+### Enrolling with Video
+
+In order to enroll with video, you must first ensure you have an enrollable model enabled for your Sensory Cloud instance. This can be obtained via the GetModels() request.
+Enrolling with video uses a call and response streaming pattern to allow immediate feedback to the user during enrollment. It is important to save the enrollmentId
+in order to perform authentication against it in the future.
+
+```csharp
+VideoService videoService = GetVideoService();
+
+// Set basic enrollment information
+string enrollmentDescription = "My Enrollment";
+string userId = "72f286b8-173f-436a-8869-6f7887789ee9";
+string modelName = "wakeword-16kHz-open_sesame.ubm";
+bool isLivenessEnabled = false;
+
+// Stream is of type AsyncDuplexStreamingCall<CreateEnrollmentRequest, CreateEnrollmentResponse>
+var stream = await videoService.StreamEnrollment(
+    enrollmentDescription,
+    userId,
+    modelName,
+    isLivenessEnabled
+    );
+
+// EnrollmentId if enrollment is successful
+string enrollmentId = null;
+
+// Start blocking while streaming up image data.
+while (String.IsNullOrEmpty(enrollmentId))
+{
+    // Populate with real video data. This example creates an empty bytestring.
+    var lin16VideoData = Google.Protobuf.ByteString.Empty;
+    var message = new CreateEnrollmentRequest { ImageContent = lin16VideoData };
+
+    try
+    {
+        await stream.RequestStream.WriteAsync(message);
+    }
+    catch (RpcException ex)
+    {
+        // Do something with the error. An error
+    }
+
+    // Wait for the response from the server
+    try
+    {
+        await stream.ResponseStream.MoveNext();
+
+        // Response contains information about the enrollment status.
+        CreateEnrollmentResponse response = stream.ResponseStream.Current;
+        enrollmentId = response.EnrollmentId;
+    }
+    catch (RpcException ex)
+    {
+        // Do something with the error - generally this is due to the server closing the stream
+    }
+}
+
+await stream.RequestStream.CompleteAsync();
+```
+
+### Authenticating with Video
+
+Authenticating with video is similar to enrollment, except now you have an enrollmentId to pass into the function.
+
+```csharp
+VideoService videoService = GetVideoService();
+
+// Set basic enrollment information
+string enrollmentId = "72f286b8-173f-436a-8869-6f7887789ee9";
+bool isLivenessEnabled = false;
+
+// Stream is of type AsyncDuplexStreamingCall<AuthenticateRequest, AuthenticateResponse>
+var stream = await videoService.StreamAuthentication(
+    enrollmentId,
+    isLivenessEnabled
+    );
+
+// Indicates if the authentication is successful
+bool authenticateSuccess = false;
+
+// Start blocking while streaming up image data.
+while (String.IsNullOrEmpty(enrollmentId))
+{
+    // Populate with real video data. This example creates an empty bytestring.
+    var lin16VideoData = Google.Protobuf.ByteString.Empty;
+    var message = new AuthenticateRequest { ImageContent = lin16VideoData };
+
+    try
+    {
+        await stream.RequestStream.WriteAsync(message);
+    }
+    catch (RpcException ex)
+    {
+        // Do something with the error. An error
+    }
+
+    // Wait for the response from the server
+    try
+    {
+        await stream.ResponseStream.MoveNext();
+
+        // Response contains information about the enrollment status.
+        AuthenticateResponse response = stream.ResponseStream.Current;
+        authenticateSuccess = response.Success;
+    }
+    catch (RpcException ex)
+    {
+        // Do something with the error - generally this is due to the server closing the stream
+    }
+}
+
+await stream.RequestStream.CompleteAsync();
+```
+
+### Video Liveness
+
+Video Liveness allows one to send images to Sensory Cloud in order to determine if the subject is a live individual rather than a spoof, such as a paper mask or picture.
+
+```csharp
+VideoService videoService = GetVideoService();
+
+// Set basic enrollment information
+string userId = "72f286b8-173f-436a-8869-6f7887789ee9";
+string modelName = "sound-16kHz-door_bell.trg";
+
+// Stream is of type AsyncDuplexStreamingCall<ValidateRecognitionRequest, LivenessRecognitionResponse>
+var stream = await videoService.StreamLivenessRecognition(
+    userId,
+    modelName
+    );
+
+// Indicates if the event is recognized
+bool isAlive = false;
+
+// Start blocking while streaming up image data.
+// Loop until user is determined to be alive. Looping behavior is entirely up to your application logic. This is a simple example of one use case.
+while (!isAlive)
+{
+    // Populate with real video data. This example creates an empty bytestring.
+    var lin16VideoData = Google.Protobuf.ByteString.Empty;
+    var message = new ValidateRecognitionRequest { ImageContent = lin16VideoData };
+
+    try
+    {
+        await stream.RequestStream.WriteAsync(message);
+    }
+    catch (RpcException ex)
+    {
+        // Do something with the error. An error
+    }
+
+    // Wait for the response from the server
+    try
+    {
+        await stream.ResponseStream.MoveNext();
+
+        // Response contains information about the enrollment status.
+        LivenessRecognitionResponse response = stream.ResponseStream.Current;
+        isAlive = response.IsAlive;
+    }
+    catch (RpcException ex)
+    {
+        // Do something with the error - generally this is due to the server closing the stream
+    }
+}
+
+await stream.RequestStream.CompleteAsync();
+```
+
+## Creating a ManagementService
+
+The ManagementService is used to manage typical CRUD operations with Sensory Cloud, such as deleting enrollments or creating enrollment groups.
+For more information on the specific functions of the ManagementService, please refer to the ManagementService.cs file located in the Services folder.
+
+```csharp
+// Tenant ID granted by Sensory Inc.
+string sensoryTenantId = "f6580f3b-dcaf-465b-867e-59fbbb0ab3fc";
+string deviceId = "a-hardware-identifier-unique-to-your-device";
+
+// Configuration specific to your tenant
+Config config = new Config("your-inference-server.com", sensoryTenantId, deviceId).Connect();
+
+ISecureCredentialStore credentialStore = new SecureCredentialStoreExample();
+IOAuthService oAuthService = new OAuthService(config, credentialStore);
+ITokenManager tokenManager = new TokenManager(OAuthService);
+
+return new ManagementService(config, tokenManager);
+```

@@ -7,11 +7,8 @@ import (
 	"strings"
 	"time"
 
-	environment "github.com/Sensory-Cloud/go-sdk/pkg/environment"
-	error_util "github.com/Sensory-Cloud/go-sdk/pkg/util/error"
 	log_util "github.com/Sensory-Cloud/go-sdk/pkg/util/log"
 	grpc "google.golang.org/grpc"
-	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials"
 )
 
@@ -26,17 +23,6 @@ const (
 // GetDefaultContext returns the default context used for most short-lived client-side requests
 func GetDefaultContext() (context.Context, context.CancelFunc) {
 	return context.WithTimeout(context.Background(), 8000*time.Second)
-}
-
-// NewCloudClientFromEnv returns a connection to a grpc client at host specified in the env as CLOUD_HOST.
-// A cleanup function is returned. This function should be called once your code is done with the client connection.
-func NewCloudClientFromEnv(opts ...grpc.DialOption) (*grpc.ClientConn, func(), error) {
-	cloudHost := environment.Get(environment.CloudHost, "")
-	if cloudHost == "" {
-		return nil, func() {}, error_util.Error(codes.FailedPrecondition, "CLOUD_HOST is not set")
-	}
-
-	return NewCloudClient(cloudHost, opts...)
 }
 
 // NewCloudClient returns a connection to a grpc client at host specified by the cloudHost input string.
