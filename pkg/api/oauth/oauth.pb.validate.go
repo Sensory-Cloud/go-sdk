@@ -17,7 +17,7 @@ import (
 
 	"github.com/golang/protobuf/ptypes"
 
-	common "gitlab.com/sensory-cloud/server/titan.git/pkg/api/common"
+	common "github.com/Sensory-Cloud/go-sdk/pkg/api/common"
 )
 
 // ensure the imports are used

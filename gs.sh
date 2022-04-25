@@ -180,6 +180,7 @@ case "$1" in
   ;;
 
   "test"|"t")
+    go test -cover $(go list ./...)
     throw_not_implemented_error
     exit 0;
   ;;

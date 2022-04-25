@@ -4,7 +4,7 @@ package health
 
 import (
 	context "context"
-	common "gitlab.com/sensory-cloud/server/titan.git/pkg/api/common"
+	common "github.com/Sensory-Cloud/go-sdk/pkg/api/common"
 	grpc "google.golang.org/grpc"
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"
