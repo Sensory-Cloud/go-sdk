@@ -51,6 +51,15 @@ generate_proto_files() {
 
     echo "Generated grpc code for $x";
   done
+
+  for x in $(find ./pkg/api -iname "*.go");
+  do
+    if [ ${OPERATING_SYSTEM} == "Darwin" ]; then
+      sed -i '' "s gitlab.com/sensory-cloud/server/titan.git/pkg github.com/Sensory-Cloud/go-sdk/pkg g" $x
+    else
+      sed -i "s/BuildVersion string = \"[^\"]*\"/BuildVersion string = \"${version}\"/" ${VERSION_FILE}
+    fi
+  done
 }
 
 run_integration_tests() {
@@ -180,8 +189,7 @@ case "$1" in
   ;;
 
   "test"|"t")
-    go test -cover $(go list ./...)
-    throw_not_implemented_error
+    go test -cover $(go list ./... | grep -v -f ${PWD}/test/test_exclusion_list.txt)
     exit 0;
   ;;
 

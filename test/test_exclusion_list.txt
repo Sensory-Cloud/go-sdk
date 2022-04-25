@@ -1,0 +1,3 @@
+gitlab.com/sensory-cloud/server/titan.git/cmd
+gitlab.com/sensory-cloud/server/titan.git/pkg/api
+gitlab.com/sensory-cloud/server/titan.git/test*
