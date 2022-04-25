@@ -1,8 +1,6 @@
 package token_manager_test
 
 import (
-	"context"
-	"strings"
 	"testing"
 	"time"
 
@@ -10,7 +8,6 @@ import (
 	token_manager "github.com/Sensory-Cloud/go-sdk/pkg/token"
 	test_util "github.com/Sensory-Cloud/go-sdk/pkg/util/test"
 	"github.com/google/uuid"
-	"github.com/grpc-ecosystem/go-grpc-middleware/util/metautils"
 )
 
 type MockOauthService struct {
@@ -52,20 +49,6 @@ func TestScheduleTokenRefresh(t *testing.T) {
 	newToken, err := tokenManager.GetToken()
 	test_util.AssertOk(t, err)
 	test_util.Assert(t, newToken != token, "a new token should be returned")
-}
-
-func TestSetAuthorizationMetadata(t *testing.T) {
-	tokenManager := token_manager.NewTokenManager(&MockOauthService{100})
-	ctx, err := tokenManager.SetAuthorizationMetadata(context.Background())
-	test_util.AssertOk(t, err)
-
-	metadata := metautils.ExtractOutgoing(ctx)
-	token := metadata.Get("authorization")
-	token = strings.TrimPrefix(token, "Bearer ")
-
-	cachedToken, err := tokenManager.GetToken()
-	test_util.AssertOk(t, err)
-	test_util.AssertEquals(t, cachedToken, token)
 }
 
 func TestRefreshToken(t *testing.T) {
