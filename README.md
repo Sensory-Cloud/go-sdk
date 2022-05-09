@@ -37,7 +37,13 @@ if err != nil {
     panic(err)
 }
 
-serverHealth, err := healthService.GetHealth()
+// Create context for the grpc request
+ctx := context.Background()
+// Optionally, set a timeout on the context
+ctx, cancel := context.WithTimeout(ctx, time.Minute)
+defer cancel()
+
+serverHealth, err := healthService.GetHealth(ctx)
 if err != nil {
     panic(err)
 }
@@ -102,6 +108,12 @@ if err != nil {
     panic(err)
 }
 
+// Create context for the grpc request
+ctx := context.Background()
+// Optionally, set a timeout on the context
+ctx, cancel := context.WithTimeout(ctx, time.Minute)
+defer cancel()
+
 // Register credentials with Sensory Cloud
 friendlyDeviceName := "Server 1";
 
@@ -111,7 +123,7 @@ friendlyDeviceName := "Server 1";
 // Path 1 --------
 // Insecure authorization credential as configured on your instance of Sensory Cloud
 unsecureSharedSecret := "password";
-oauthService.Register(friendlyDeviceName, unsecureSharedSecret);
+oauthService.Register(ctx, friendlyDeviceName, unsecureSharedSecret);
 
 // Path 2 --------
 // Secure Public / private keypair registration using Portable.BouncyCastle and ScottBrady.IdentityModel
@@ -130,7 +142,7 @@ if err != nil {
     panic(err)
 }
 
-oauthService.Register(friendlyDeviceName, string(token));
+oauthService.Register(ctx, friendlyDeviceName, string(token));
 
 // Save credentials to your persistent credentialStore for future use
 credentialStore.ClientId = oAuthClient.ClientId;
@@ -225,7 +237,14 @@ In order to determine which audio models are accessible to you, you can execute 
 
 ```go
 audioService := audio_service.NewAudioService(config, tokenManager)
-audioModels := audioService.GetModels();
+
+// Create context for the grpc request
+ctx := context.Background()
+// Optionally, set a timeout on the context
+ctx, cancel := context.WithTimeout(ctx, time.Minute)
+defer cancel()
+
+audioModels := audioService.GetModels(ctx);
 ```
 
 Audio models contain the following properties:
