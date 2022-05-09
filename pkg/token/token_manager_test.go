@@ -1,6 +1,7 @@
 package token_manager_test
 
 import (
+	"context"
 	"testing"
 	"time"
 
@@ -14,7 +15,7 @@ type MockOauthService struct {
 	ExpiresIn int32
 }
 
-func (m *MockOauthService) GetToken() (*common.TokenResponse, error) {
+func (m *MockOauthService) GetToken(ctx context.Context) (*common.TokenResponse, error) {
 	return &common.TokenResponse{
 		AccessToken: uuid.NewString(),
 		ExpiresIn:   m.ExpiresIn,

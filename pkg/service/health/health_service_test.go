@@ -1,6 +1,7 @@
 package health_service_test
 
 import (
+	"context"
 	"testing"
 
 	config "github.com/Sensory-Cloud/go-sdk/pkg/config"
@@ -23,7 +24,7 @@ func TestGetHealth(t *testing.T) {
 	healthService, err := health_service.NewHealthService(&config)
 	test_util.AssertOk(t, err)
 
-	response, err := healthService.GetHealth()
+	response, err := healthService.GetHealth(context.Background())
 	test_util.AssertOk(t, err)
 	test_util.AssertEquals(t, response.IsHealthy, true)
 }

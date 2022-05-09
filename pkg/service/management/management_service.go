@@ -1,7 +1,8 @@
 package management_service
 
 import (
-	grpc_client "github.com/Sensory-Cloud/go-sdk/pkg/client"
+	"context"
+
 	"github.com/Sensory-Cloud/go-sdk/pkg/config"
 	management_api_v1 "github.com/Sensory-Cloud/go-sdk/pkg/generated/v1/management"
 	token_manager "github.com/Sensory-Cloud/go-sdk/pkg/token"
@@ -25,10 +26,7 @@ func NewManagementService(config *config.ClientConfig, tokenManager token_manage
 }
 
 // Obtains all of the active enrollments given the userId
-func (s *ManagementService) GetEnrollments(userId string) (*management_api_v1.GetEnrollmentsResponse, error) {
-	ctx, cancel := grpc_client.GetDefaultContext()
-	defer cancel()
-
+func (s *ManagementService) GetEnrollments(ctx context.Context, userId string) (*management_api_v1.GetEnrollmentsResponse, error) {
 	ctx, err := s.tokenManager.SetAuthorizationMetadata(ctx)
 	if err != nil {
 		return nil, err
@@ -40,10 +38,7 @@ func (s *ManagementService) GetEnrollments(userId string) (*management_api_v1.Ge
 }
 
 // Obtains all of the active enrollment groups registered by this userId
-func (s *ManagementService) GetEnrollmentGroups(userId string) (*management_api_v1.GetEnrollmentGroupsResponse, error) {
-	ctx, cancel := grpc_client.GetDefaultContext()
-	defer cancel()
-
+func (s *ManagementService) GetEnrollmentGroups(ctx context.Context, userId string) (*management_api_v1.GetEnrollmentGroupsResponse, error) {
 	ctx, err := s.tokenManager.SetAuthorizationMetadata(ctx)
 	if err != nil {
 		return nil, err
@@ -55,10 +50,7 @@ func (s *ManagementService) GetEnrollmentGroups(userId string) (*management_api_
 }
 
 // Register a new enrollment group. Enrollment groups can contain up to 10 enrollments, and they enable multiple users to be recognized with the same request.
-func (s *ManagementService) CreateEnrollmentGroups(group *management_api_v1.CreateEnrollmentGroupRequest) (*management_api_v1.EnrollmentGroupResponse, error) {
-	ctx, cancel := grpc_client.GetDefaultContext()
-	defer cancel()
-
+func (s *ManagementService) CreateEnrollmentGroups(ctx context.Context, group *management_api_v1.CreateEnrollmentGroupRequest) (*management_api_v1.EnrollmentGroupResponse, error) {
 	ctx, err := s.tokenManager.SetAuthorizationMetadata(ctx)
 	if err != nil {
 		return nil, err
@@ -68,10 +60,7 @@ func (s *ManagementService) CreateEnrollmentGroups(group *management_api_v1.Crea
 }
 
 // Add a new enrollment to an enrollment group.
-func (s *ManagementService) AppendEnrollmentGroup(request *management_api_v1.AppendEnrollmentGroupRequest) (*management_api_v1.EnrollmentGroupResponse, error) {
-	ctx, cancel := grpc_client.GetDefaultContext()
-	defer cancel()
-
+func (s *ManagementService) AppendEnrollmentGroup(ctx context.Context, request *management_api_v1.AppendEnrollmentGroupRequest) (*management_api_v1.EnrollmentGroupResponse, error) {
 	ctx, err := s.tokenManager.SetAuthorizationMetadata(ctx)
 	if err != nil {
 		return nil, err
@@ -81,10 +70,7 @@ func (s *ManagementService) AppendEnrollmentGroup(request *management_api_v1.App
 }
 
 // Removes an enrollment from the system
-func (s *ManagementService) DeleteEnrollment(id string) (*management_api_v1.EnrollmentResponse, error) {
-	ctx, cancel := grpc_client.GetDefaultContext()
-	defer cancel()
-
+func (s *ManagementService) DeleteEnrollment(ctx context.Context, id string) (*management_api_v1.EnrollmentResponse, error) {
 	ctx, err := s.tokenManager.SetAuthorizationMetadata(ctx)
 	if err != nil {
 		return nil, err
@@ -94,10 +80,7 @@ func (s *ManagementService) DeleteEnrollment(id string) (*management_api_v1.Enro
 }
 
 // Removes an enrollment group from the system
-func (s *ManagementService) DeleteEnrollmentGroup(id string) (*management_api_v1.EnrollmentGroupResponse, error) {
-	ctx, cancel := grpc_client.GetDefaultContext()
-	defer cancel()
-
+func (s *ManagementService) DeleteEnrollmentGroup(ctx context.Context, id string) (*management_api_v1.EnrollmentGroupResponse, error) {
 	ctx, err := s.tokenManager.SetAuthorizationMetadata(ctx)
 	if err != nil {
 		return nil, err

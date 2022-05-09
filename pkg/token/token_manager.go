@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"time"
 
+	grpc_client "github.com/Sensory-Cloud/go-sdk/pkg/client"
 	common "github.com/Sensory-Cloud/go-sdk/pkg/generated/common"
 	log_util "github.com/Sensory-Cloud/go-sdk/pkg/util/log"
 	metadata "google.golang.org/grpc/metadata"
@@ -34,7 +35,7 @@ type ITokenManager interface {
 }
 
 type ITokenGetter interface {
-	GetToken() (*common.TokenResponse, error)
+	GetToken(ctx context.Context) (*common.TokenResponse, error)
 }
 
 // TokenManager retrieves and caches OAuth tokens
@@ -121,5 +122,7 @@ func (t *TokenManager) IsTokenExpired() bool {
 }
 
 func (t *TokenManager) fetchToken() (*common.TokenResponse, error) {
-	return t.tokenGetter.GetToken()
+	ctx, cancel := grpc_client.GetDefaultContext()
+	defer cancel()
+	return t.tokenGetter.GetToken(ctx)
 }

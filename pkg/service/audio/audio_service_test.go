@@ -2,12 +2,15 @@ package audio_service_test
 
 import (
 	"testing"
+	// audio_api_v1 "github.com/Sensory-Cloud/go-sdk/pkg/generated/v1/audio"
+	// audio_service "github.com/Sensory-Cloud/go-sdk/pkg/service/audio"
+	// test_util "github.com/Sensory-Cloud/go-sdk/pkg/util/test"
 )
 
 func TestNewAudioService(t *testing.T) {
 	t.FailNow()
 
-	// audioSerice, err := audio_service.NewAudioService()
+	// audioSerice, err := audio_service.NewAudioService(config, tokenManager)
 	// userId := "user1@test.com"
 	// modelName := "wakeword-16kHz-open_sesame.ubm"
 
@@ -22,7 +25,13 @@ func TestNewAudioService(t *testing.T) {
 	// 	ModelName: modelName,
 	// }
 
-	// stream, err := audioSerice.StreamTranscription(audioConfig)
+	// // Create context for the grpc request
+	// ctx := context.Background()
+	// // Optionally, set a timeout on the context
+	// ctx, cancel := context.WithTimeout(ctx, time.Minute)
+	// defer cancel()
+
+	// stream, err := audioSerice.StreamTranscription(ctx, audioConfig)
 	// defer stream.CloseSend()
 	// test_util.AssertOk(t, err)
 

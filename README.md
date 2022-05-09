@@ -224,7 +224,7 @@ Certain audio models are available to your application depending on the models t
 In order to determine which audio models are accessible to you, you can execute the below code.
 
 ```go
-audioService := NewAudioService(config, tokenManager)
+audioService := audio_service.NewAudioService(config, tokenManager)
 audioModels := audioService.GetModels();
 ```
 
@@ -261,7 +261,13 @@ audioConfig := &audio_api_v1.CreateEnrollmentConfig{
     IsLivenessEnabled: isLivenessEnabled,
 }
 
-stream, err := audioSerice.StreamEnrollment(audioConfig)
+// Create context for the grpc request
+ctx := context.Background()
+// Optionally, set a timeout on the context
+ctx, cancel := context.WithTimeout(ctx, time.Minute)
+defer cancel()
+
+stream, err := audioSerice.StreamEnrollment(ctx, audioConfig)
 defer stream.CloseSend()
 test_util.AssertOk(t, err)
 
@@ -362,7 +368,7 @@ the ValidateEnrolledEvent function.
 Transcription is used to convert audio into text.
 
 ```go
-audioSerice, err := audio_service.NewAudioService()
+audioSerice, err := audio_service.NewAudioService(config, tokenManager)
 userId := "user1@test.com"
 modelName := "wakeword-16kHz-open_sesame.ubm"
 
@@ -377,7 +383,13 @@ audioConfig := &audio_api_v1.TranscribeConfig{
     ModelName: modelName,
 }
 
-stream, err := audioSerice.StreamTranscription(audioConfig)
+// Create context for the grpc request
+ctx := context.Background()
+// Optionally, set a timeout on the context
+ctx, cancel := context.WithTimeout(ctx, time.Minute)
+defer cancel()
+
+stream, err := audioSerice.StreamTranscription(ctx, audioConfig)
 defer stream.CloseSend()
 test_util.AssertOk(t, err)
 

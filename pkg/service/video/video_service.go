@@ -1,7 +1,8 @@
 package video_service
 
 import (
-	grpc_client "github.com/Sensory-Cloud/go-sdk/pkg/client"
+	"context"
+
 	"github.com/Sensory-Cloud/go-sdk/pkg/config"
 	video_api_v1 "github.com/Sensory-Cloud/go-sdk/pkg/generated/v1/video"
 	token_manager "github.com/Sensory-Cloud/go-sdk/pkg/token"
@@ -29,10 +30,7 @@ func NewVideoService(config *config.ClientConfig, tokenManager token_manager.IAu
 }
 
 //  Fetch all the vision models supported by your instance of Sensory Cloud.
-func (s *VideoService) GetModels() (*video_api_v1.GetModelsResponse, error) {
-	ctx, cancel := grpc_client.GetDefaultContext()
-	defer cancel()
-
+func (s *VideoService) GetModels(ctx context.Context) (*video_api_v1.GetModelsResponse, error) {
 	ctx, err := s.tokenManager.SetAuthorizationMetadata(ctx)
 	if err != nil {
 		return nil, err
@@ -43,11 +41,7 @@ func (s *VideoService) GetModels() (*video_api_v1.GetModelsResponse, error) {
 
 // Stream images to Sensory Cloud as a means for user enrollment.
 // Only biometric-typed models are supported by the method.
-func (s *VideoService) StreamEnrollment(config *video_api_v1.CreateEnrollmentConfig) (video_api_v1.VideoBiometrics_CreateEnrollmentClient, error) {
-
-	ctx, cancel := grpc_client.GetDefaultContext()
-	defer cancel()
-
+func (s *VideoService) StreamEnrollment(ctx context.Context, config *video_api_v1.CreateEnrollmentConfig) (video_api_v1.VideoBiometrics_CreateEnrollmentClient, error) {
 	ctx, err := s.tokenManager.SetAuthorizationMetadata(ctx)
 	if err != nil {
 		return nil, err
@@ -72,11 +66,7 @@ func (s *VideoService) StreamEnrollment(config *video_api_v1.CreateEnrollmentCon
 
 // Authenticate against an existing enrollment in Sensory Cloud.
 // Only biometric-typed models are supported by the method.
-func (s *VideoService) StreamAuthentication(config *video_api_v1.AuthenticateConfig) (video_api_v1.VideoBiometrics_AuthenticateClient, error) {
-
-	ctx, cancel := grpc_client.GetDefaultContext()
-	defer cancel()
-
+func (s *VideoService) StreamAuthentication(ctx context.Context, config *video_api_v1.AuthenticateConfig) (video_api_v1.VideoBiometrics_AuthenticateClient, error) {
 	ctx, err := s.tokenManager.SetAuthorizationMetadata(ctx)
 	if err != nil {
 		return nil, err
@@ -100,11 +90,7 @@ func (s *VideoService) StreamAuthentication(config *video_api_v1.AuthenticateCon
 }
 
 // Stream images to Sensory Cloud in order to recognize "liveness" of a particular image.
-func (s *VideoService) StreamLivenessRecognition(config *video_api_v1.ValidateRecognitionConfig) (video_api_v1.VideoRecognition_ValidateLivenessClient, error) {
-
-	ctx, cancel := grpc_client.GetDefaultContext()
-	defer cancel()
-
+func (s *VideoService) StreamLivenessRecognition(ctx context.Context, config *video_api_v1.ValidateRecognitionConfig) (video_api_v1.VideoRecognition_ValidateLivenessClient, error) {
 	ctx, err := s.tokenManager.SetAuthorizationMetadata(ctx)
 	if err != nil {
 		return nil, err
