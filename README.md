@@ -298,13 +298,17 @@ responseChan := make(chan *audio_api_v1.CreateEnrollmentResponse, 10)
 audioChan := make(chan []byte, 3)
 
 // Listen for responses on the gRPC pipe on a separate goroutine
-go func() {
-    response, err := stream.Recv()
-    if err != nil {
-        errorChan <- err
-    }
 
-    responseChan <- response
+go func() {
+    for {
+        response, err := stream.Recv()
+        if err != nil {
+            errorChan <- err
+            return
+        }
+
+        responseChan <- response
+    }
 }()
 
 for {
@@ -421,12 +425,15 @@ audioChan := make(chan []byte, 3)
 
 // Listen for responses on the gRPC pipe on a separate goroutine
 go func() {
-    response, err := stream.Recv()
-    if err != nil {
-        errorChan <- err
-    }
+    for {
+        response, err := stream.Recv()
+        if err != nil {
+            errorChan <- err
+            return
+        }
 
-    responseChan <- response
+        responseChan <- response
+    }
 }()
 
 for {
