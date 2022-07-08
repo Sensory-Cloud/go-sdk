@@ -697,3 +697,120 @@ var AudioTranscriptions_ServiceDesc = grpc.ServiceDesc{
 	},
 	Metadata: "v1/audio/audio.proto",
 }
+
+// AudioSynthesisClient is the client API for AudioSynthesis service.
+//
+// For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
+type AudioSynthesisClient interface {
+	// Synthesizes speech from text
+	// Authorization metadata is required {"authorization": "Bearer <TOKNE>"}
+	SynthesizeSpeech(ctx context.Context, in *SynthesizeSpeechRequest, opts ...grpc.CallOption) (AudioSynthesis_SynthesizeSpeechClient, error)
+}
+
+type audioSynthesisClient struct {
+	cc grpc.ClientConnInterface
+}
+
+func NewAudioSynthesisClient(cc grpc.ClientConnInterface) AudioSynthesisClient {
+	return &audioSynthesisClient{cc}
+}
+
+func (c *audioSynthesisClient) SynthesizeSpeech(ctx context.Context, in *SynthesizeSpeechRequest, opts ...grpc.CallOption) (AudioSynthesis_SynthesizeSpeechClient, error) {
+	stream, err := c.cc.NewStream(ctx, &AudioSynthesis_ServiceDesc.Streams[0], "/sensory.api.v1.audio.AudioSynthesis/SynthesizeSpeech", opts...)
+	if err != nil {
+		return nil, err
+	}
+	x := &audioSynthesisSynthesizeSpeechClient{stream}
+	if err := x.ClientStream.SendMsg(in); err != nil {
+		return nil, err
+	}
+	if err := x.ClientStream.CloseSend(); err != nil {
+		return nil, err
+	}
+	return x, nil
+}
+
+type AudioSynthesis_SynthesizeSpeechClient interface {
+	Recv() (*SynthesizeSpeechResponse, error)
+	grpc.ClientStream
+}
+
+type audioSynthesisSynthesizeSpeechClient struct {
+	grpc.ClientStream
+}
+
+func (x *audioSynthesisSynthesizeSpeechClient) Recv() (*SynthesizeSpeechResponse, error) {
+	m := new(SynthesizeSpeechResponse)
+	if err := x.ClientStream.RecvMsg(m); err != nil {
+		return nil, err
+	}
+	return m, nil
+}
+
+// AudioSynthesisServer is the server API for AudioSynthesis service.
+// All implementations must embed UnimplementedAudioSynthesisServer
+// for forward compatibility
+type AudioSynthesisServer interface {
+	// Synthesizes speech from text
+	// Authorization metadata is required {"authorization": "Bearer <TOKNE>"}
+	SynthesizeSpeech(*SynthesizeSpeechRequest, AudioSynthesis_SynthesizeSpeechServer) error
+	mustEmbedUnimplementedAudioSynthesisServer()
+}
+
+// UnimplementedAudioSynthesisServer must be embedded to have forward compatible implementations.
+type UnimplementedAudioSynthesisServer struct {
+}
+
+func (UnimplementedAudioSynthesisServer) SynthesizeSpeech(*SynthesizeSpeechRequest, AudioSynthesis_SynthesizeSpeechServer) error {
+	return status.Errorf(codes.Unimplemented, "method SynthesizeSpeech not implemented")
+}
+func (UnimplementedAudioSynthesisServer) mustEmbedUnimplementedAudioSynthesisServer() {}
+
+// UnsafeAudioSynthesisServer may be embedded to opt out of forward compatibility for this service.
+// Use of this interface is not recommended, as added methods to AudioSynthesisServer will
+// result in compilation errors.
+type UnsafeAudioSynthesisServer interface {
+	mustEmbedUnimplementedAudioSynthesisServer()
+}
+
+func RegisterAudioSynthesisServer(s grpc.ServiceRegistrar, srv AudioSynthesisServer) {
+	s.RegisterService(&AudioSynthesis_ServiceDesc, srv)
+}
+
+func _AudioSynthesis_SynthesizeSpeech_Handler(srv interface{}, stream grpc.ServerStream) error {
+	m := new(SynthesizeSpeechRequest)
+	if err := stream.RecvMsg(m); err != nil {
+		return err
+	}
+	return srv.(AudioSynthesisServer).SynthesizeSpeech(m, &audioSynthesisSynthesizeSpeechServer{stream})
+}
+
+type AudioSynthesis_SynthesizeSpeechServer interface {
+	Send(*SynthesizeSpeechResponse) error
+	grpc.ServerStream
+}
+
+type audioSynthesisSynthesizeSpeechServer struct {
+	grpc.ServerStream
+}
+
+func (x *audioSynthesisSynthesizeSpeechServer) Send(m *SynthesizeSpeechResponse) error {
+	return x.ServerStream.SendMsg(m)
+}
+
+// AudioSynthesis_ServiceDesc is the grpc.ServiceDesc for AudioSynthesis service.
+// It's only intended for direct use with grpc.RegisterService,
+// and not to be introspected or modified (even as a copy)
+var AudioSynthesis_ServiceDesc = grpc.ServiceDesc{
+	ServiceName: "sensory.api.v1.audio.AudioSynthesis",
+	HandlerType: (*AudioSynthesisServer)(nil),
+	Methods:     []grpc.MethodDesc{},
+	Streams: []grpc.StreamDesc{
+		{
+			StreamName:    "SynthesizeSpeech",
+			Handler:       _AudioSynthesis_SynthesizeSpeech_Handler,
+			ServerStreams: true,
+		},
+	},
+	Metadata: "v1/audio/audio.proto",
+}
