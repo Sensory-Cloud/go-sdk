@@ -10,6 +10,7 @@ import (
 // ClientConfig establishes the necessary parameters to establish a gRPC connection to Sensory Cloud
 type ClientConfig struct {
 	FullyQualifiedDomainName string
+	IsSecure                 bool
 	TenantId                 string
 	DeviceId                 string
 	client                   *grpc.ClientConn
@@ -17,7 +18,7 @@ type ClientConfig struct {
 
 // Connect establishes a gRPC connection to Sensory Cloud
 func (c *ClientConfig) Connect() (onClose func(), err error) {
-	client, onClose, err := grpc_client.NewCloudClient(c.FullyQualifiedDomainName)
+	client, onClose, err := grpc_client.NewCloudClient(c.FullyQualifiedDomainName, c.IsSecure)
 	if err != nil {
 		return onClose, err
 	}
@@ -33,4 +34,36 @@ func (c *ClientConfig) GetClient() (*grpc.ClientConn, error) {
 	}
 
 	return c.client, nil
+}
+
+// Enum to specify the authentication level required for device enrollment by the Sensory Cloud Server
+type EnrollmentType int
+
+const (
+	// No authentication is required to enroll a new device
+	None EnrollmentType = iota
+	// Devices are enrolled via a shared secret (i.e. password)
+	SharedSecret
+	// Devices are enrolled via a signed JWT
+	Jwt
+)
+
+// All configurations required to initialize the Sensory Cloud SDK
+type SDKInitConfig struct {
+	// The fully qualified domain name of teh Sensory Cloud Server to communicate with
+	FullyQualifiedDomainName string
+	// Tells if the SDK should use a secure connection to the Sensory Cloud server or not
+	IsSecure bool
+	// The tenant ID to use during device enrollment
+	TenantID string
+	// The level of authentication required to enroll new devices into the Sensory Cloud Server
+	// If the device has already been enrolled during a previous session, this field is ignored
+	EnrollmentType EnrollmentType
+	// Credential for device enrollment
+	// If the device has already been enrolled during a previous session, this field is ignored
+	Credential string
+	// Unique identifier for the current device
+	DeviceID string
+	// Friendly name for the current device
+	DeviceName string
 }
