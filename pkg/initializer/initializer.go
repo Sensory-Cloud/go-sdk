@@ -8,6 +8,11 @@ import (
 	oauth_service "github.com/Sensory-Cloud/go-sdk/pkg/service/oauth"
 )
 
+var (
+	// Initializer function to create a new oauth service. Should only be changed for unit testing
+	OauthServiceInit func(*config.ClientConfig, oauth_service.ISecureCredentialStore) (oauth_service.IOauthService, error) = oauth_service.NewOauthService
+)
+
 // Creates a signed JWT for device enrollment
 type IJWTSigner interface {
 	// Creates a signed JWT used for device enrollment
@@ -39,7 +44,7 @@ func NewInitializer(credentialStore oauth_service.ISecureCredentialStore, jwtSig
 //   - config: config object that should be passed into services when they are initialized (config.Connect must be called before use)
 //   - device response: server response from device registration, will be nil on error, or if the device has already been registered
 //   - error: Any error that occurs during initialization/registration
-func (i *Initializer) initialize(ctx context.Context, sdkConfig config.SDKInitConfig) (*config.ClientConfig, *management_api_v1.DeviceResponse, error) {
+func (i *Initializer) Initialize(ctx context.Context, sdkConfig config.SDKInitConfig) (*config.ClientConfig, *management_api_v1.DeviceResponse, error) {
 
 	// Construct the clientConfig
 	clientConfig := config.ClientConfig{
@@ -87,7 +92,7 @@ func (i *Initializer) initialize(ctx context.Context, sdkConfig config.SDKInitCo
 		return &clientConfig, nil, err
 	}
 	defer onClose()
-	oauthService, err := oauth_service.NewOauthService(&oauthClientConfig, i.secureCredentialStore)
+	oauthService, err := OauthServiceInit(&oauthClientConfig, i.secureCredentialStore)
 	if err != nil {
 		return &clientConfig, nil, err
 	}

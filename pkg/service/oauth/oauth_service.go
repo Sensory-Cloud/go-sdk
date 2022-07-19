@@ -25,6 +25,19 @@ type ISecureCredentialStore interface {
 	GetClientSecret() string
 }
 
+type IOauthService interface {
+	// Get information about the current registered device as inferred by the OAuth credentials supplied by the credential manager.
+	// A new token is request every time this call is made, so use sparingly.
+	GetWhoAmI(ctx context.Context) (*management_api_v1.DeviceResponse, error)
+	// GetToken retrieves a token from Sensory Cloud based on the configured credentials
+	GetToken(ctx context.Context) (*common.TokenResponse, error)
+	// Register credentials provided by the attached SecureCredentialStore to Sensory Cloud. This function should only be called
+	// once per unique credential pair. An error will be thrown if registration fails.
+	Register(ctx context.Context, deviceName string, credential string) (*management_api_v1.DeviceResponse, error)
+	// RenewDeviceCredential allows a client to re-register with Sensory Cloud if their credentials have expired
+	RenewDeviceCredential(ctx context.Context, credential string) (*management_api_v1.DeviceResponse, error)
+}
+
 type OauthService struct {
 	config                *config.ClientConfig
 	oauthClient           oauth.OauthServiceClient
@@ -38,7 +51,7 @@ type OauthClient struct {
 }
 
 // NewOauthService creates a new service to handle OAuth authentication with Sensory Cloud
-func NewOauthService(config *config.ClientConfig, secureCredentialStore ISecureCredentialStore) (*OauthService, error) {
+func NewOauthService(config *config.ClientConfig, secureCredentialStore ISecureCredentialStore) (IOauthService, error) {
 	client, err := config.GetClient()
 	if err != nil {
 		return nil, err
