@@ -4,6 +4,7 @@ import (
 	"context"
 
 	config "github.com/Sensory-Cloud/go-sdk/pkg/config"
+	file_parser "github.com/Sensory-Cloud/go-sdk/pkg/file_parser"
 	management_api_v1 "github.com/Sensory-Cloud/go-sdk/pkg/generated/v1/management"
 	oauth_service "github.com/Sensory-Cloud/go-sdk/pkg/service/oauth"
 )
@@ -37,6 +38,16 @@ type Initializer struct {
 //  - jwtSigner: Signer to create a signed enrollment jwt with. This may be nil if enrollment type is not `jwt`
 func NewInitializer(credentialStore oauth_service.ISecureCredentialStore, jwtSigner IJWTSigner) *Initializer {
 	return &Initializer{secureCredentialStore: credentialStore, jwtSigner: jwtSigner}
+}
+
+func (i *Initializer) InitializeFromFile(ctx context.Context, filename string) (*config.ClientConfig, *management_api_v1.DeviceResponse, error) {
+	parser := file_parser.NewFileParser()
+	config, err := parser.ReadFile(filename)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	return i.Initialize(ctx, *config)
 }
 
 // Initializes the SDK and automatically registers the device if the device has not already been registered

@@ -90,6 +90,8 @@ deviceId := "a-hardware-identifier-unique-to-your-device"
 deviceName := "a-user-friendly-name-for-this-device"
 
 // Configuration specific to your tenant
+// Configurations may also be loaded from a file name
+//  - see `pkg/file_parser/testdata` for example configuration files
 sdkInitConfig := config.SDKInitConfig{
     FullyQualifiedDomainName: "your-inference-server.com",
     IsSecure: true,
