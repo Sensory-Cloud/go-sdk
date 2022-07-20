@@ -103,3 +103,7 @@ func TestStreamValidateEnrolledEvent(t *testing.T) {
 func TestStreamTranscription(t *testing.T) {
 	t.FailNow()
 }
+
+func TestSynthesizeSpeech(t *testing.T) {
+	t.FailNow()
+}

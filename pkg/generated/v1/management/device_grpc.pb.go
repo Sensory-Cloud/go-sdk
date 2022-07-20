@@ -26,12 +26,14 @@ type DeviceServiceClient interface {
 	// Allows a device to fetch information about itself
 	// Authorization metadata is required {"authorization": "Bearer <TOKEN>"}
 	GetWhoAmI(ctx context.Context, in *DeviceGetWhoAmIRequest, opts ...grpc.CallOption) (*DeviceResponse, error)
+	// Returns device information
+	GetDevice(ctx context.Context, in *DeviceRequest, opts ...grpc.CallOption) (*GetDeviceResponse, error)
 	// Returns a list of devices associated with the given userId
 	GetDevices(ctx context.Context, in *GetDevicesRequest, opts ...grpc.CallOption) (*DeviceListResponse, error)
 	// Allows the name of a device to be updated
 	UpdateDevice(ctx context.Context, in *UpdateDeviceRequest, opts ...grpc.CallOption) (*DeviceResponse, error)
 	// Allows a device to be deleted
-	DeleteDevice(ctx context.Context, in *DeleteDeviceRequest, opts ...grpc.CallOption) (*DeviceResponse, error)
+	DeleteDevice(ctx context.Context, in *DeviceRequest, opts ...grpc.CallOption) (*DeviceResponse, error)
 }
 
 type deviceServiceClient struct {
@@ -69,6 +71,15 @@ func (c *deviceServiceClient) GetWhoAmI(ctx context.Context, in *DeviceGetWhoAmI
 	return out, nil
 }
 
+func (c *deviceServiceClient) GetDevice(ctx context.Context, in *DeviceRequest, opts ...grpc.CallOption) (*GetDeviceResponse, error) {
+	out := new(GetDeviceResponse)
+	err := c.cc.Invoke(ctx, "/sensory.api.v1.management.DeviceService/GetDevice", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *deviceServiceClient) GetDevices(ctx context.Context, in *GetDevicesRequest, opts ...grpc.CallOption) (*DeviceListResponse, error) {
 	out := new(DeviceListResponse)
 	err := c.cc.Invoke(ctx, "/sensory.api.v1.management.DeviceService/GetDevices", in, out, opts...)
@@ -87,7 +98,7 @@ func (c *deviceServiceClient) UpdateDevice(ctx context.Context, in *UpdateDevice
 	return out, nil
 }
 
-func (c *deviceServiceClient) DeleteDevice(ctx context.Context, in *DeleteDeviceRequest, opts ...grpc.CallOption) (*DeviceResponse, error) {
+func (c *deviceServiceClient) DeleteDevice(ctx context.Context, in *DeviceRequest, opts ...grpc.CallOption) (*DeviceResponse, error) {
 	out := new(DeviceResponse)
 	err := c.cc.Invoke(ctx, "/sensory.api.v1.management.DeviceService/DeleteDevice", in, out, opts...)
 	if err != nil {
@@ -108,12 +119,14 @@ type DeviceServiceServer interface {
 	// Allows a device to fetch information about itself
 	// Authorization metadata is required {"authorization": "Bearer <TOKEN>"}
 	GetWhoAmI(context.Context, *DeviceGetWhoAmIRequest) (*DeviceResponse, error)
+	// Returns device information
+	GetDevice(context.Context, *DeviceRequest) (*GetDeviceResponse, error)
 	// Returns a list of devices associated with the given userId
 	GetDevices(context.Context, *GetDevicesRequest) (*DeviceListResponse, error)
 	// Allows the name of a device to be updated
 	UpdateDevice(context.Context, *UpdateDeviceRequest) (*DeviceResponse, error)
 	// Allows a device to be deleted
-	DeleteDevice(context.Context, *DeleteDeviceRequest) (*DeviceResponse, error)
+	DeleteDevice(context.Context, *DeviceRequest) (*DeviceResponse, error)
 	mustEmbedUnimplementedDeviceServiceServer()
 }
 
@@ -130,13 +143,16 @@ func (UnimplementedDeviceServiceServer) RenewDeviceCredential(context.Context, *
 func (UnimplementedDeviceServiceServer) GetWhoAmI(context.Context, *DeviceGetWhoAmIRequest) (*DeviceResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetWhoAmI not implemented")
 }
+func (UnimplementedDeviceServiceServer) GetDevice(context.Context, *DeviceRequest) (*GetDeviceResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetDevice not implemented")
+}
 func (UnimplementedDeviceServiceServer) GetDevices(context.Context, *GetDevicesRequest) (*DeviceListResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetDevices not implemented")
 }
 func (UnimplementedDeviceServiceServer) UpdateDevice(context.Context, *UpdateDeviceRequest) (*DeviceResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method UpdateDevice not implemented")
 }
-func (UnimplementedDeviceServiceServer) DeleteDevice(context.Context, *DeleteDeviceRequest) (*DeviceResponse, error) {
+func (UnimplementedDeviceServiceServer) DeleteDevice(context.Context, *DeviceRequest) (*DeviceResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method DeleteDevice not implemented")
 }
 func (UnimplementedDeviceServiceServer) mustEmbedUnimplementedDeviceServiceServer() {}
@@ -206,6 +222,24 @@ func _DeviceService_GetWhoAmI_Handler(srv interface{}, ctx context.Context, dec 
 	return interceptor(ctx, in, info, handler)
 }
 
+func _DeviceService_GetDevice_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(DeviceRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(DeviceServiceServer).GetDevice(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/sensory.api.v1.management.DeviceService/GetDevice",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(DeviceServiceServer).GetDevice(ctx, req.(*DeviceRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _DeviceService_GetDevices_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(GetDevicesRequest)
 	if err := dec(in); err != nil {
@@ -243,7 +277,7 @@ func _DeviceService_UpdateDevice_Handler(srv interface{}, ctx context.Context, d
 }
 
 func _DeviceService_DeleteDevice_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(DeleteDeviceRequest)
+	in := new(DeviceRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
@@ -255,7 +289,7 @@ func _DeviceService_DeleteDevice_Handler(srv interface{}, ctx context.Context, d
 		FullMethod: "/sensory.api.v1.management.DeviceService/DeleteDevice",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(DeviceServiceServer).DeleteDevice(ctx, req.(*DeleteDeviceRequest))
+		return srv.(DeviceServiceServer).DeleteDevice(ctx, req.(*DeviceRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -278,6 +312,10 @@ var DeviceService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetWhoAmI",
 			Handler:    _DeviceService_GetWhoAmI_Handler,
+		},
+		{
+			MethodName: "GetDevice",
+			Handler:    _DeviceService_GetDevice_Handler,
 		},
 		{
 			MethodName: "GetDevices",

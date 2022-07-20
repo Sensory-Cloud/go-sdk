@@ -15,7 +15,7 @@ import (
 	"time"
 	"unicode/utf8"
 
-	"github.com/golang/protobuf/ptypes"
+	"google.golang.org/protobuf/types/known/anypb"
 
 	common "github.com/Sensory-Cloud/go-sdk/pkg/generated/common"
 )
@@ -32,9 +32,17 @@ var (
 	_ = time.Duration(0)
 	_ = (*url.URL)(nil)
 	_ = (*mail.Address)(nil)
-	_ = ptypes.DynamicAny{}
+	_ = anypb.Any{}
 
 	_ = common.UsageEventType(0)
+
+	_ = common.ModelType(0)
+
+	_ = common.UsageEventType(0)
+
+	_ = common.ModelType(0)
+
+	_ = common.ModelType(0)
 )
 
 // define the regex for a UUID once up-front
@@ -176,6 +184,10 @@ func (m *UsageEvent) Validate() error {
 
 	// no validation rules for VideoFrameCount
 
+	// no validation rules for TenantId
+
+	// no validation rules for BillableFunction
+
 	return nil
 }
 
@@ -240,6 +252,480 @@ var _ interface {
 	Cause() error
 	ErrorName() string
 } = UsageEventValidationError{}
+
+// Validate checks the field values on UsageEventResponse with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, an error is returned.
+func (m *UsageEventResponse) Validate() error {
+	if m == nil {
+		return nil
+	}
+
+	if m.GetTimestamp() == nil {
+		return UsageEventResponseValidationError{
+			field:  "Timestamp",
+			reason: "value is required",
+		}
+	}
+
+	if m.GetDuration() < 0 {
+		return UsageEventResponseValidationError{
+			field:  "Duration",
+			reason: "value must be greater than or equal to 0",
+		}
+	}
+
+	if err := m._validateUuid(m.GetId()); err != nil {
+		return UsageEventResponseValidationError{
+			field:  "Id",
+			reason: "value must be a valid UUID",
+			cause:  err,
+		}
+	}
+
+	if l := utf8.RuneCountInString(m.GetClientId()); l < 1 || l > 127 {
+		return UsageEventResponseValidationError{
+			field:  "ClientId",
+			reason: "value length must be between 1 and 127 runes, inclusive",
+		}
+	}
+
+	if _, ok := common.UsageEventType_name[int32(m.GetType())]; !ok {
+		return UsageEventResponseValidationError{
+			field:  "Type",
+			reason: "value must be one of the defined enum values",
+		}
+	}
+
+	if l := utf8.RuneCountInString(m.GetRoute()); l < 1 || l > 511 {
+		return UsageEventResponseValidationError{
+			field:  "Route",
+			reason: "value length must be between 1 and 511 runes, inclusive",
+		}
+	}
+
+	// no validation rules for BillableValue
+
+	// no validation rules for BillableUnits
+
+	// no validation rules for TenantId
+
+	// no validation rules for BillableFunction
+
+	return nil
+}
+
+func (m *UsageEventResponse) _validateUuid(uuid string) error {
+	if matched := _event_uuidPattern.MatchString(uuid); !matched {
+		return errors.New("invalid uuid format")
+	}
+
+	return nil
+}
+
+// UsageEventResponseValidationError is the validation error returned by
+// UsageEventResponse.Validate if the designated constraints aren't met.
+type UsageEventResponseValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e UsageEventResponseValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e UsageEventResponseValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e UsageEventResponseValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e UsageEventResponseValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e UsageEventResponseValidationError) ErrorName() string {
+	return "UsageEventResponseValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e UsageEventResponseValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sUsageEventResponse.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = UsageEventResponseValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = UsageEventResponseValidationError{}
+
+// Validate checks the field values on UsageEventListRequest with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, an error is returned.
+func (m *UsageEventListRequest) Validate() error {
+	if m == nil {
+		return nil
+	}
+
+	// no validation rules for TenantId
+
+	if v, ok := interface{}(m.GetPagination()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return UsageEventListRequestValidationError{
+				field:  "Pagination",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
+	if v, ok := interface{}(m.GetAfter()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return UsageEventListRequestValidationError{
+				field:  "After",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
+	if v, ok := interface{}(m.GetBefore()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return UsageEventListRequestValidationError{
+				field:  "Before",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
+	return nil
+}
+
+// UsageEventListRequestValidationError is the validation error returned by
+// UsageEventListRequest.Validate if the designated constraints aren't met.
+type UsageEventListRequestValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e UsageEventListRequestValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e UsageEventListRequestValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e UsageEventListRequestValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e UsageEventListRequestValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e UsageEventListRequestValidationError) ErrorName() string {
+	return "UsageEventListRequestValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e UsageEventListRequestValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sUsageEventListRequest.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = UsageEventListRequestValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = UsageEventListRequestValidationError{}
+
+// Validate checks the field values on UsageEventListResponse with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, an error is returned.
+func (m *UsageEventListResponse) Validate() error {
+	if m == nil {
+		return nil
+	}
+
+	for idx, item := range m.GetEvents() {
+		_, _ = idx, item
+
+		if v, ok := interface{}(item).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return UsageEventListResponseValidationError{
+					field:  fmt.Sprintf("Events[%v]", idx),
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
+	}
+
+	if v, ok := interface{}(m.GetPagination()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return UsageEventListResponseValidationError{
+				field:  "Pagination",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
+	return nil
+}
+
+// UsageEventListResponseValidationError is the validation error returned by
+// UsageEventListResponse.Validate if the designated constraints aren't met.
+type UsageEventListResponseValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e UsageEventListResponseValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e UsageEventListResponseValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e UsageEventListResponseValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e UsageEventListResponseValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e UsageEventListResponseValidationError) ErrorName() string {
+	return "UsageEventListResponseValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e UsageEventListResponseValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sUsageEventListResponse.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = UsageEventListResponseValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = UsageEventListResponseValidationError{}
+
+// Validate checks the field values on UsageEventSummary with the rules defined
+// in the proto definition for this message. If any rules are violated, an
+// error is returned.
+func (m *UsageEventSummary) Validate() error {
+	if m == nil {
+		return nil
+	}
+
+	for idx, item := range m.GetSummaries() {
+		_, _ = idx, item
+
+		if v, ok := interface{}(item).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return UsageEventSummaryValidationError{
+					field:  fmt.Sprintf("Summaries[%v]", idx),
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
+	}
+
+	return nil
+}
+
+// UsageEventSummaryValidationError is the validation error returned by
+// UsageEventSummary.Validate if the designated constraints aren't met.
+type UsageEventSummaryValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e UsageEventSummaryValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e UsageEventSummaryValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e UsageEventSummaryValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e UsageEventSummaryValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e UsageEventSummaryValidationError) ErrorName() string {
+	return "UsageEventSummaryValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e UsageEventSummaryValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sUsageEventSummary.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = UsageEventSummaryValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = UsageEventSummaryValidationError{}
+
+// Validate checks the field values on UsageEventModelSummary with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, an error is returned.
+func (m *UsageEventModelSummary) Validate() error {
+	if m == nil {
+		return nil
+	}
+
+	// no validation rules for BillableFunction
+
+	// no validation rules for Units
+
+	// no validation rules for Value
+
+	// no validation rules for Count
+
+	return nil
+}
+
+// UsageEventModelSummaryValidationError is the validation error returned by
+// UsageEventModelSummary.Validate if the designated constraints aren't met.
+type UsageEventModelSummaryValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e UsageEventModelSummaryValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e UsageEventModelSummaryValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e UsageEventModelSummaryValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e UsageEventModelSummaryValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e UsageEventModelSummaryValidationError) ErrorName() string {
+	return "UsageEventModelSummaryValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e UsageEventModelSummaryValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sUsageEventModelSummary.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = UsageEventModelSummaryValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = UsageEventModelSummaryValidationError{}
 
 // Validate checks the field values on PublishUsageEventsResponse with the
 // rules defined in the proto definition for this message. If any rules are

@@ -15,7 +15,7 @@ import (
 	"time"
 	"unicode/utf8"
 
-	"github.com/golang/protobuf/ptypes"
+	"google.golang.org/protobuf/types/known/anypb"
 )
 
 // ensure the imports are used
@@ -30,7 +30,7 @@ var (
 	_ = time.Duration(0)
 	_ = (*url.URL)(nil)
 	_ = (*mail.Address)(nil)
-	_ = ptypes.DynamicAny{}
+	_ = anypb.Any{}
 )
 
 // define the regex for a UUID once up-front
@@ -325,6 +325,78 @@ var _ interface {
 	ErrorName() string
 } = DeviceGetWhoAmIRequestValidationError{}
 
+// Validate checks the field values on DeviceRequest with the rules defined in
+// the proto definition for this message. If any rules are violated, an error
+// is returned.
+func (m *DeviceRequest) Validate() error {
+	if m == nil {
+		return nil
+	}
+
+	if l := utf8.RuneCountInString(m.GetDeviceId()); l < 1 || l > 127 {
+		return DeviceRequestValidationError{
+			field:  "DeviceId",
+			reason: "value length must be between 1 and 127 runes, inclusive",
+		}
+	}
+
+	return nil
+}
+
+// DeviceRequestValidationError is the validation error returned by
+// DeviceRequest.Validate if the designated constraints aren't met.
+type DeviceRequestValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e DeviceRequestValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e DeviceRequestValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e DeviceRequestValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e DeviceRequestValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e DeviceRequestValidationError) ErrorName() string { return "DeviceRequestValidationError" }
+
+// Error satisfies the builtin error interface
+func (e DeviceRequestValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sDeviceRequest.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = DeviceRequestValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = DeviceRequestValidationError{}
+
 // Validate checks the field values on GetDevicesRequest with the rules defined
 // in the proto definition for this message. If any rules are violated, an
 // error is returned.
@@ -345,10 +417,10 @@ func (m *GetDevicesRequest) Validate() error {
 		}
 	}
 
-	if l := utf8.RuneCountInString(m.GetUserId()); l < 1 || l > 127 {
+	if utf8.RuneCountInString(m.GetUserId()) > 127 {
 		return GetDevicesRequestValidationError{
 			field:  "UserId",
-			reason: "value length must be between 1 and 127 runes, inclusive",
+			reason: "value length must be at most 127 runes",
 		}
 	}
 
@@ -492,80 +564,6 @@ var _ interface {
 	ErrorName() string
 } = UpdateDeviceRequestValidationError{}
 
-// Validate checks the field values on DeleteDeviceRequest with the rules
-// defined in the proto definition for this message. If any rules are
-// violated, an error is returned.
-func (m *DeleteDeviceRequest) Validate() error {
-	if m == nil {
-		return nil
-	}
-
-	if l := utf8.RuneCountInString(m.GetDeviceId()); l < 1 || l > 127 {
-		return DeleteDeviceRequestValidationError{
-			field:  "DeviceId",
-			reason: "value length must be between 1 and 127 runes, inclusive",
-		}
-	}
-
-	return nil
-}
-
-// DeleteDeviceRequestValidationError is the validation error returned by
-// DeleteDeviceRequest.Validate if the designated constraints aren't met.
-type DeleteDeviceRequestValidationError struct {
-	field  string
-	reason string
-	cause  error
-	key    bool
-}
-
-// Field function returns field value.
-func (e DeleteDeviceRequestValidationError) Field() string { return e.field }
-
-// Reason function returns reason value.
-func (e DeleteDeviceRequestValidationError) Reason() string { return e.reason }
-
-// Cause function returns cause value.
-func (e DeleteDeviceRequestValidationError) Cause() error { return e.cause }
-
-// Key function returns key value.
-func (e DeleteDeviceRequestValidationError) Key() bool { return e.key }
-
-// ErrorName returns error name.
-func (e DeleteDeviceRequestValidationError) ErrorName() string {
-	return "DeleteDeviceRequestValidationError"
-}
-
-// Error satisfies the builtin error interface
-func (e DeleteDeviceRequestValidationError) Error() string {
-	cause := ""
-	if e.cause != nil {
-		cause = fmt.Sprintf(" | caused by: %v", e.cause)
-	}
-
-	key := ""
-	if e.key {
-		key = "key for "
-	}
-
-	return fmt.Sprintf(
-		"invalid %sDeleteDeviceRequest.%s: %s%s",
-		key,
-		e.field,
-		e.reason,
-		cause)
-}
-
-var _ error = DeleteDeviceRequestValidationError{}
-
-var _ interface {
-	Field() string
-	Reason() string
-	Key() bool
-	Cause() error
-	ErrorName() string
-} = DeleteDeviceRequestValidationError{}
-
 // Validate checks the field values on DeviceResponse with the rules defined in
 // the proto definition for this message. If any rules are violated, an error
 // is returned.
@@ -634,6 +632,79 @@ var _ interface {
 	Cause() error
 	ErrorName() string
 } = DeviceResponseValidationError{}
+
+// Validate checks the field values on GetDeviceResponse with the rules defined
+// in the proto definition for this message. If any rules are violated, an
+// error is returned.
+func (m *GetDeviceResponse) Validate() error {
+	if m == nil {
+		return nil
+	}
+
+	// no validation rules for Name
+
+	// no validation rules for DeviceId
+
+	// no validation rules for UserCount
+
+	return nil
+}
+
+// GetDeviceResponseValidationError is the validation error returned by
+// GetDeviceResponse.Validate if the designated constraints aren't met.
+type GetDeviceResponseValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e GetDeviceResponseValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e GetDeviceResponseValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e GetDeviceResponseValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e GetDeviceResponseValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e GetDeviceResponseValidationError) ErrorName() string {
+	return "GetDeviceResponseValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e GetDeviceResponseValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sGetDeviceResponse.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = GetDeviceResponseValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = GetDeviceResponseValidationError{}
 
 // Validate checks the field values on DeviceListResponse with the rules
 // defined in the proto definition for this message. If any rules are

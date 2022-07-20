@@ -15,7 +15,7 @@ import (
 	"time"
 	"unicode/utf8"
 
-	"github.com/golang/protobuf/ptypes"
+	"google.golang.org/protobuf/types/known/anypb"
 )
 
 // ensure the imports are used
@@ -30,7 +30,7 @@ var (
 	_ = time.Duration(0)
 	_ = (*url.URL)(nil)
 	_ = (*mail.Address)(nil)
-	_ = ptypes.DynamicAny{}
+	_ = anypb.Any{}
 )
 
 // define the regex for a UUID once up-front
@@ -923,3 +923,72 @@ var _ interface {
 	Cause() error
 	ErrorName() string
 } = PaginationResponseValidationError{}
+
+// Validate checks the field values on EnrollmentToken with the rules defined
+// in the proto definition for this message. If any rules are violated, an
+// error is returned.
+func (m *EnrollmentToken) Validate() error {
+	if m == nil {
+		return nil
+	}
+
+	// no validation rules for Token
+
+	// no validation rules for Expiration
+
+	return nil
+}
+
+// EnrollmentTokenValidationError is the validation error returned by
+// EnrollmentToken.Validate if the designated constraints aren't met.
+type EnrollmentTokenValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e EnrollmentTokenValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e EnrollmentTokenValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e EnrollmentTokenValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e EnrollmentTokenValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e EnrollmentTokenValidationError) ErrorName() string { return "EnrollmentTokenValidationError" }
+
+// Error satisfies the builtin error interface
+func (e EnrollmentTokenValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sEnrollmentToken.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = EnrollmentTokenValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = EnrollmentTokenValidationError{}

@@ -63,6 +63,11 @@ type SecureCredentialStore struct {
 	ClientSecret string
 }
 
+func (s SecureCredentialStore) SaveCredentials(clientId string, secret string) {
+    s.ClientId = clientId
+    s.ClientSecret = secret
+}
+
 func (s SecureCredentialStore) GetClientId() string {
 	return s.ClientId
 }
@@ -82,31 +87,23 @@ The below example shows how to create an OAuthService and register a client for 
 // Tenant ID granted by Sensory Inc.
 sensoryTenantId := "f6580f3b-dcaf-465b-867e-59fbbb0ab3fc"
 deviceId := "a-hardware-identifier-unique-to-your-device"
+deviceName := "a-user-friendly-name-for-this-device"
 
 // Configuration specific to your tenant
-config := config.ClientConfig{
+// Configurations may also be loaded from a file name
+//  - see `pkg/file_parser/testdata` for example configuration files
+sdkInitConfig := config.SDKInitConfig{
     FullyQualifiedDomainName: "your-inference-server.com",
-    TenantId:                 sensoryTenantId,
-    DeviceId:                 deviceId,
+    IsSecure: true,
+    TenantID: sensoryTenantId,
+    EnrollmentType: config.SharedSecret,
+    Credential: "password",
+    DeviceID: deviceId,
+    DeviceName: deviceName,
 }
 
-onClose, err := config.Connect()
-if err != nil {
-    panic(err)
-}
-defer onClose()
-
+// Create a secure credential store
 credentialStore := SecureCredentialStore{}
-oauthService, err := NewOauthService(config, credentialStore);
-if err != nil {
-    panic(err)
-}
-
-// Generate cryptographically random credentials
-oauthClient, err := oauth_service.GenerateCredentials();
-if err != nil {
-    panic(err)
-}
 
 // Create context for the grpc request
 ctx := context.Background()
@@ -114,21 +111,52 @@ ctx := context.Background()
 ctx, cancel := context.WithTimeout(ctx, time.Minute)
 defer cancel()
 
-// Register credentials with Sensory Cloud
-friendlyDeviceName := "Server 1";
+// Initialize the SDK
+sdkInitializer := initializer.NewInitializer(credentialStore, nil)
+clientConfig, response, err := sdkInitializer.Initialize(context, sdkInitConfig)
+if err != nil {
+    panic(err)
+}
+
+// Connect to the returned client config
+// The clientConfig should be saved and used when initializing other Sensory Cloud services
+onClose, err := clientConfig.Connect()
+if err != nil {
+    panic(err)
+}
+defer onClose()
+
 
 // OAuth registration can take one of two paths, the unsecure path that uses a shared secret between this device and your instance of Sensory Cloud
 // or asymmetric public / private keypair registration.
 
-// Path 1 --------
+// Path 1 (used in the above example) --------
 // Insecure authorization credential as configured on your instance of Sensory Cloud
-unsecureSharedSecret := "password";
-oauthService.Register(ctx, friendlyDeviceName, unsecureSharedSecret);
+sdkInitConfig := config.SDKInitConfig{
+    FullyQualifiedDomainName: "your-inference-server.com",
+    IsSecure: true,
+    TenantID: sensoryTenantId,
+    EnrollmentType: config.SharedSecret,
+    Credential: "password",
+    DeviceID: deviceId,
+    DeviceName: deviceName,
+}
 
 // Path 2 --------
 // Secure Public / private keypair registration using Portable.BouncyCastle and ScottBrady.IdentityModel
 
+sdkInitConfig := config.SDKInitConfig{
+    FullyQualifiedDomainName: "your-inference-server.com",
+    IsSecure: true,
+    TenantID: sensoryTenantId,
+    EnrollmentType: config.jwt,
+    Credential: "your-signing-private-key",
+    DeviceID: deviceId,
+    DeviceName: deviceName,
+}
+
 // Keypair generation happens out of band and long before a registration occurs. The below example shows how to generate and sign an enrollment JWT as a comprehensive example.
+// For this path, a JWT signer must be passed into the SDK initializer that can create a signed JWT
 
 // Public key is persisted in Sensory Cloud via the Management interface
 publicKey, privateKey, err := ed25519.GenerateKey(rand.Reader)
@@ -141,12 +169,6 @@ token, err := claims.EdDSASign(privateKey)
 if err != nil {
     panic(err)
 }
-
-oauthService.Register(ctx, friendlyDeviceName, string(token));
-
-// Save credentials to your persistent credentialStore for future use
-credentialStore.ClientId = oAuthClient.ClientId;
-credentialStore.ClientSecret = oAuthClient.ClientSecret;
 ```
 
 ## Renewing Credentials
@@ -165,25 +187,16 @@ oauthService.RenewDeviceCredential(newToken);
 The TokenManger class handles requesting OAuth tokens when necessary.
 
 ```go
-// Tenant ID granted by Sensory Inc.
-sensoryTenantId := "f6580f3b-dcaf-465b-867e-59fbbb0ab3fc"
-deviceId := "a-hardware-identifier-unique-to-your-device"
+clientConfig := config.ClientConfig{} // Use clientConfig returned by the initialize call
 
-// Configuration specific to your tenant
-config := config.ClientConfig{
-    FullyQualifiedDomainName: "your-inference-server.com",
-    TenantId:                 sensoryTenantId,
-    DeviceId:                 deviceId,
-}
-
-onClose, err := config.Connect()
+onClose, err := clientConfig.Connect()
 if err != nil {
     panic(err)
 }
 defer onClose()
 
 credentialStore := SecureCredentialStore{}
-oauthService, err := NewOauthService(config, credentialStore);
+oauthService, err := NewOauthService(clientConfig, credentialStore);
 if err != nil {
     panic(err)
 }
@@ -203,30 +216,21 @@ instantiated per Config. In most circumstances you will only ever have one Confi
 multiple Sensory Cloud servers.
 
 ```go
-// Tenant ID granted by Sensory Inc.
-sensoryTenantId := "f6580f3b-dcaf-465b-867e-59fbbb0ab3fc"
-deviceId := "a-hardware-identifier-unique-to-your-device"
+clientConfig := config.ClientConfig{} // Use clientConfig returned by the initialize call
 
-// Configuration specific to your tenant
-config := config.ClientConfig{
-    FullyQualifiedDomainName: "your-inference-server.com",
-    TenantId:                 sensoryTenantId,
-    DeviceId:                 deviceId,
-}
-
-onClose, err := config.Connect()
+onClose, err := clientConfig.Connect()
 if err != nil {
     panic(err)
 }
 defer onClose()
 
 credentialStore := SecureCredentialStore{}
-oauthService, err := NewOauthService(config, credentialStore);
+oauthService, err := NewOauthService(clientConfig, credentialStore);
 if err != nil {
     panic(err)
 }
 tokenManager := NewTokenManager(oauthService);
-audioService := NewAudioService(config, tokenManager)
+audioService := NewAudioService(clientConfig, tokenManager)
 
 ```
 
@@ -514,31 +518,22 @@ The ManagementService is used to manage typical CRUD operations with Sensory Clo
 For more information on the specific functions of the ManagementService, please refer to the ManagementService.cs file located in the Services folder.
 
 ```go
-// Tenant ID granted by Sensory Inc.
-sensoryTenantId := "f6580f3b-dcaf-465b-867e-59fbbb0ab3fc"
-deviceId := "a-hardware-identifier-unique-to-your-device"
+clientConfig := config.ClientConfig{} // Use clientConfig returned by the initialize call
 
-// Configuration specific to your tenant
-config := config.ClientConfig{
-    FullyQualifiedDomainName: "your-inference-server.com",
-    TenantId:                 sensoryTenantId,
-    DeviceId:                 deviceId,
-}
-
-onClose, err := config.Connect()
+onClose, err := clientConfig.Connect()
 if err != nil {
     panic(err)
 }
 defer onClose()
 
 credentialStore := SecureCredentialStore{}
-oauthService, err := NewOauthService(config, credentialStore);
+oauthService, err := NewOauthService(clientConfig, credentialStore);
 if err != nil {
     panic(err)
 }
 tokenManager := NewTokenManager(oauthService);
 
-managementService, err := NewManagementService(config, tokenManager);
+managementService, err := NewManagementService(clientConfig, tokenManager);
 if err != nil {
     panic(err)
 }

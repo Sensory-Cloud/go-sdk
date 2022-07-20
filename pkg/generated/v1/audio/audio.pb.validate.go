@@ -15,7 +15,7 @@ import (
 	"time"
 	"unicode/utf8"
 
-	"github.com/golang/protobuf/ptypes"
+	"google.golang.org/protobuf/types/known/anypb"
 
 	common "github.com/Sensory-Cloud/go-sdk/pkg/generated/common"
 )
@@ -32,7 +32,7 @@ var (
 	_ = time.Duration(0)
 	_ = (*url.URL)(nil)
 	_ = (*mail.Address)(nil)
-	_ = ptypes.DynamicAny{}
+	_ = anypb.Any{}
 
 	_ = common.ModelType(0)
 
@@ -994,6 +994,85 @@ var _ interface {
 	ErrorName() string
 } = TranscribeRequestValidationError{}
 
+// Validate checks the field values on SynthesizeSpeechRequest with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, an error is returned.
+func (m *SynthesizeSpeechRequest) Validate() error {
+	if m == nil {
+		return nil
+	}
+
+	// no validation rules for Phrase
+
+	if v, ok := interface{}(m.GetConfig()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return SynthesizeSpeechRequestValidationError{
+				field:  "Config",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
+	return nil
+}
+
+// SynthesizeSpeechRequestValidationError is the validation error returned by
+// SynthesizeSpeechRequest.Validate if the designated constraints aren't met.
+type SynthesizeSpeechRequestValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e SynthesizeSpeechRequestValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e SynthesizeSpeechRequestValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e SynthesizeSpeechRequestValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e SynthesizeSpeechRequestValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e SynthesizeSpeechRequestValidationError) ErrorName() string {
+	return "SynthesizeSpeechRequestValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e SynthesizeSpeechRequestValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sSynthesizeSpeechRequest.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = SynthesizeSpeechRequestValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = SynthesizeSpeechRequestValidationError{}
+
 // Validate checks the field values on CreateEnrollmentResponse with the rules
 // defined in the proto definition for this message. If any rules are
 // violated, an error is returned.
@@ -1015,6 +1094,16 @@ func (m *CreateEnrollmentResponse) Validate() error {
 	// no validation rules for ModelPrompt
 
 	// no validation rules for PercentSegmentComplete
+
+	if v, ok := interface{}(m.GetEnrollmentToken()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return CreateEnrollmentResponseValidationError{
+				field:  "EnrollmentToken",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
 
 	return nil
 }
@@ -1410,6 +1499,92 @@ var _ interface {
 	ErrorName() string
 } = TranscribeResponseValidationError{}
 
+// Validate checks the field values on SynthesizeSpeechResponse with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, an error is returned.
+func (m *SynthesizeSpeechResponse) Validate() error {
+	if m == nil {
+		return nil
+	}
+
+	switch m.StreamingResponse.(type) {
+
+	case *SynthesizeSpeechResponse_Config:
+
+		if v, ok := interface{}(m.GetConfig()).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return SynthesizeSpeechResponseValidationError{
+					field:  "Config",
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
+	case *SynthesizeSpeechResponse_AudioContent:
+		// no validation rules for AudioContent
+
+	}
+
+	return nil
+}
+
+// SynthesizeSpeechResponseValidationError is the validation error returned by
+// SynthesizeSpeechResponse.Validate if the designated constraints aren't met.
+type SynthesizeSpeechResponseValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e SynthesizeSpeechResponseValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e SynthesizeSpeechResponseValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e SynthesizeSpeechResponseValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e SynthesizeSpeechResponseValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e SynthesizeSpeechResponseValidationError) ErrorName() string {
+	return "SynthesizeSpeechResponseValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e SynthesizeSpeechResponseValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sSynthesizeSpeechResponse.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = SynthesizeSpeechResponseValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = SynthesizeSpeechResponseValidationError{}
+
 // Validate checks the field values on CreateEnrollmentConfig with the rules
 // defined in the proto definition for this message. If any rules are
 // violated, an error is returned.
@@ -1471,6 +1646,8 @@ func (m *CreateEnrollmentConfig) Validate() error {
 			reason: "value length must be at most 127 runes",
 		}
 	}
+
+	// no validation rules for DisableServerEnrollmentTemplateStorage
 
 	switch m.EnrollLength.(type) {
 
@@ -1595,6 +1772,8 @@ func (m *AuthenticateConfig) Validate() error {
 	}
 
 	// no validation rules for IsLivenessEnabled
+
+	// no validation rules for EnrollmentToken
 
 	switch m.AuthId.(type) {
 
@@ -1844,6 +2023,8 @@ func (m *CreateEnrollmentEventConfig) Validate() error {
 		}
 	}
 
+	// no validation rules for DisableServerEnrollmentTemplateStorage
+
 	switch m.EnrollLength.(type) {
 
 	case *CreateEnrollmentEventConfig_EnrollmentNumUtterances:
@@ -1957,6 +2138,8 @@ func (m *ValidateEnrolledEventConfig) Validate() error {
 			reason: "value must be one of the defined enum values",
 		}
 	}
+
+	// no validation rules for EnrollmentToken
 
 	switch m.AuthId.(type) {
 
@@ -2232,3 +2415,94 @@ var _ interface {
 	Cause() error
 	ErrorName() string
 } = AudioConfigValidationError{}
+
+// Validate checks the field values on VoiceSynthesisConfig with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, an error is returned.
+func (m *VoiceSynthesisConfig) Validate() error {
+	if m == nil {
+		return nil
+	}
+
+	if m.GetAudio() == nil {
+		return VoiceSynthesisConfigValidationError{
+			field:  "Audio",
+			reason: "value is required",
+		}
+	}
+
+	if v, ok := interface{}(m.GetAudio()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return VoiceSynthesisConfigValidationError{
+				field:  "Audio",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
+	if l := utf8.RuneCountInString(m.GetVoice()); l < 1 || l > 127 {
+		return VoiceSynthesisConfigValidationError{
+			field:  "Voice",
+			reason: "value length must be between 1 and 127 runes, inclusive",
+		}
+	}
+
+	return nil
+}
+
+// VoiceSynthesisConfigValidationError is the validation error returned by
+// VoiceSynthesisConfig.Validate if the designated constraints aren't met.
+type VoiceSynthesisConfigValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e VoiceSynthesisConfigValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e VoiceSynthesisConfigValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e VoiceSynthesisConfigValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e VoiceSynthesisConfigValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e VoiceSynthesisConfigValidationError) ErrorName() string {
+	return "VoiceSynthesisConfigValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e VoiceSynthesisConfigValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sVoiceSynthesisConfig.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = VoiceSynthesisConfigValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = VoiceSynthesisConfigValidationError{}

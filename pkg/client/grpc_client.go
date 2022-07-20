@@ -4,7 +4,6 @@ package grpc_client
 import (
 	"context"
 	"crypto/tls"
-	"strings"
 	"time"
 
 	log_util "github.com/Sensory-Cloud/go-sdk/pkg/util/log"
@@ -27,8 +26,8 @@ func GetDefaultContext() (context.Context, context.CancelFunc) {
 
 // NewCloudClient returns a connection to a grpc client at host specified by the cloudHost input string.
 // A cleanup function is returned. This function should be called once your code is done with the client connection.
-func NewCloudClient(cloudHost string, opts ...grpc.DialOption) (*grpc.ClientConn, func(), error) {
-	if isInsecureHost(cloudHost) {
+func NewCloudClient(cloudHost string, isSecure bool, opts ...grpc.DialOption) (*grpc.ClientConn, func(), error) {
+	if !isSecure {
 		opts = append(opts, grpc.WithInsecure())
 	} else {
 		// TODO: Improve TLS security requirements to prevent machine-in-the-middle attacks
@@ -55,8 +54,4 @@ func NewCloudClient(cloudHost string, opts ...grpc.DialOption) (*grpc.ClientConn
 	}
 
 	return client, cleanup, nil
-}
-
-func isInsecureHost(host string) bool {
-	return strings.HasPrefix(host, "http://") || strings.HasPrefix(host, "localhost") || strings.HasPrefix(host, "titan")
 }

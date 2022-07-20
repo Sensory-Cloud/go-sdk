@@ -15,6 +15,7 @@ type AudioService struct {
 	audioEventsClient         audio_api_v1.AudioEventsClient
 	audioModelsClient         audio_api_v1.AudioModelsClient
 	audioTranscriptionsClient audio_api_v1.AudioTranscriptionsClient
+	audioSynthesisClient      audio_api_v1.AudioSynthesisClient
 }
 
 // NewAudioService creates a service to handle audio requests to Sensory Cloud
@@ -28,7 +29,8 @@ func NewAudioService(config *config.ClientConfig, tokenManager token_manager.IAu
 	audioEventsClient := audio_api_v1.NewAudioEventsClient(client)
 	audioModelsClient := audio_api_v1.NewAudioModelsClient(client)
 	audioTranscriptionsClient := audio_api_v1.NewAudioTranscriptionsClient(client)
-	return &AudioService{config, tokenManager, audioBiometricsClient, audioEventsClient, audioModelsClient, audioTranscriptionsClient}, nil
+	audioSynthesisClient := audio_api_v1.NewAudioSynthesisClient(client)
+	return &AudioService{config, tokenManager, audioBiometricsClient, audioEventsClient, audioModelsClient, audioTranscriptionsClient, audioSynthesisClient}, nil
 }
 
 //  Fetch all the audio models supported by your instance of Sensory Cloud.
@@ -195,4 +197,15 @@ func (s *AudioService) StreamTranscription(ctx context.Context, config *audio_ap
 	}
 
 	return transcriptionsStream, nil
+}
+
+// Streams synthesized speech back from Sensory Cloud
+// Concatenating all of the `audioContent` of the responses from the returned client will result in a complete WAV file of the resultant audio
+func (s *AudioService) SynthesizeSpeech(ctx context.Context, request *audio_api_v1.SynthesizeSpeechRequest) (audio_api_v1.AudioSynthesis_SynthesizeSpeechClient, error) {
+	ctx, err := s.tokenManager.SetAuthorizationMetadata(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	return s.audioSynthesisClient.SynthesizeSpeech(ctx, request)
 }

@@ -21,6 +21,12 @@ type EventServiceClient interface {
 	// Publishes a list of usage event to the cloud
 	// Authorization metadata is required {"authorization": "Bearer <TOKEN>"}
 	PublishUsageEvents(ctx context.Context, in *PublishUsageEventsRequest, opts ...grpc.CallOption) (*PublishUsageEventsResponse, error)
+	// Obtains a list of events given the filter criteria
+	// Authorization metadata is required {"authorization": "Bearer <TOKEN>"}
+	GetUsageEventList(ctx context.Context, in *UsageEventListRequest, opts ...grpc.CallOption) (*UsageEventListResponse, error)
+	// Obtains a summary of events given the filter critieria
+	// Authorization metadata is required {"authorization": "Bearer <TOKEN>"}
+	GetUsageEventSummary(ctx context.Context, in *UsageEventListRequest, opts ...grpc.CallOption) (*UsageEventSummary, error)
 }
 
 type eventServiceClient struct {
@@ -40,6 +46,24 @@ func (c *eventServiceClient) PublishUsageEvents(ctx context.Context, in *Publish
 	return out, nil
 }
 
+func (c *eventServiceClient) GetUsageEventList(ctx context.Context, in *UsageEventListRequest, opts ...grpc.CallOption) (*UsageEventListResponse, error) {
+	out := new(UsageEventListResponse)
+	err := c.cc.Invoke(ctx, "/sensory.api.v1.event.EventService/GetUsageEventList", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *eventServiceClient) GetUsageEventSummary(ctx context.Context, in *UsageEventListRequest, opts ...grpc.CallOption) (*UsageEventSummary, error) {
+	out := new(UsageEventSummary)
+	err := c.cc.Invoke(ctx, "/sensory.api.v1.event.EventService/GetUsageEventSummary", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // EventServiceServer is the server API for EventService service.
 // All implementations must embed UnimplementedEventServiceServer
 // for forward compatibility
@@ -47,6 +71,12 @@ type EventServiceServer interface {
 	// Publishes a list of usage event to the cloud
 	// Authorization metadata is required {"authorization": "Bearer <TOKEN>"}
 	PublishUsageEvents(context.Context, *PublishUsageEventsRequest) (*PublishUsageEventsResponse, error)
+	// Obtains a list of events given the filter criteria
+	// Authorization metadata is required {"authorization": "Bearer <TOKEN>"}
+	GetUsageEventList(context.Context, *UsageEventListRequest) (*UsageEventListResponse, error)
+	// Obtains a summary of events given the filter critieria
+	// Authorization metadata is required {"authorization": "Bearer <TOKEN>"}
+	GetUsageEventSummary(context.Context, *UsageEventListRequest) (*UsageEventSummary, error)
 	mustEmbedUnimplementedEventServiceServer()
 }
 
@@ -56,6 +86,12 @@ type UnimplementedEventServiceServer struct {
 
 func (UnimplementedEventServiceServer) PublishUsageEvents(context.Context, *PublishUsageEventsRequest) (*PublishUsageEventsResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method PublishUsageEvents not implemented")
+}
+func (UnimplementedEventServiceServer) GetUsageEventList(context.Context, *UsageEventListRequest) (*UsageEventListResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetUsageEventList not implemented")
+}
+func (UnimplementedEventServiceServer) GetUsageEventSummary(context.Context, *UsageEventListRequest) (*UsageEventSummary, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetUsageEventSummary not implemented")
 }
 func (UnimplementedEventServiceServer) mustEmbedUnimplementedEventServiceServer() {}
 
@@ -88,6 +124,42 @@ func _EventService_PublishUsageEvents_Handler(srv interface{}, ctx context.Conte
 	return interceptor(ctx, in, info, handler)
 }
 
+func _EventService_GetUsageEventList_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UsageEventListRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(EventServiceServer).GetUsageEventList(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/sensory.api.v1.event.EventService/GetUsageEventList",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(EventServiceServer).GetUsageEventList(ctx, req.(*UsageEventListRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _EventService_GetUsageEventSummary_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UsageEventListRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(EventServiceServer).GetUsageEventSummary(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/sensory.api.v1.event.EventService/GetUsageEventSummary",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(EventServiceServer).GetUsageEventSummary(ctx, req.(*UsageEventListRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // EventService_ServiceDesc is the grpc.ServiceDesc for EventService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -98,6 +170,14 @@ var EventService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "PublishUsageEvents",
 			Handler:    _EventService_PublishUsageEvents_Handler,
+		},
+		{
+			MethodName: "GetUsageEventList",
+			Handler:    _EventService_GetUsageEventList_Handler,
+		},
+		{
+			MethodName: "GetUsageEventSummary",
+			Handler:    _EventService_GetUsageEventSummary_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

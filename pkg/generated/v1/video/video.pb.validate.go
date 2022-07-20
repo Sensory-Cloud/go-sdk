@@ -15,7 +15,7 @@ import (
 	"time"
 	"unicode/utf8"
 
-	"github.com/golang/protobuf/ptypes"
+	"google.golang.org/protobuf/types/known/anypb"
 
 	common "github.com/Sensory-Cloud/go-sdk/pkg/generated/common"
 )
@@ -32,7 +32,7 @@ var (
 	_ = time.Duration(0)
 	_ = (*url.URL)(nil)
 	_ = (*mail.Address)(nil)
-	_ = ptypes.DynamicAny{}
+	_ = anypb.Any{}
 
 	_ = common.ModelType(0)
 
@@ -561,6 +561,16 @@ func (m *CreateEnrollmentResponse) Validate() error {
 
 	// no validation rules for Score
 
+	if v, ok := interface{}(m.GetEnrollmentToken()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return CreateEnrollmentResponseValidationError{
+				field:  "EnrollmentToken",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
 	return nil
 }
 
@@ -843,6 +853,8 @@ func (m *CreateEnrollmentConfig) Validate() error {
 
 	// no validation rules for NumLivenessFramesRequired
 
+	// no validation rules for DisableServerEnrollmentTemplateStorage
+
 	return nil
 }
 
@@ -930,6 +942,8 @@ func (m *AuthenticateConfig) Validate() error {
 	}
 
 	// no validation rules for DoIncludeToken
+
+	// no validation rules for EnrollmentToken
 
 	switch m.AuthId.(type) {
 
