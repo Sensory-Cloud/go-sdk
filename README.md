@@ -410,6 +410,8 @@ audioConfig := &audio_api_v1.TranscribeConfig{
     ModelName: modelName,
 }
 
+aggregator := audio_service.FullTranscriptAggregator{}
+
 // Create context for the grpc request
 ctx := context.Background()
 // Optionally, set a timeout on the context
@@ -454,6 +456,9 @@ for {
     case result := <-responseChan:
         fmt.Printf("Response from server: %v", result)
 
+        // Process the response using the aggregator
+        aggregator.ProcessResponse(response.GetWordList())
+
     // Send audio bytes up the pipe
     case audio := <-audioChan:
         err := stream.Send(&audio_api_v1.TranscribeRequest{
@@ -466,6 +471,9 @@ for {
         }
     }
 }
+
+// aggregator.GetCurrentTranscript() is the entire transcript as a string
+// aggregator.GetCurrentWordList() is every word stored in a slice with metadata such as start, end, and confidence of each word
 ```
 
 ## Creating a VideoService
