@@ -15,7 +15,7 @@ import (
 	"time"
 	"unicode/utf8"
 
-	"google.golang.org/protobuf/types/known/anypb"
+	"github.com/golang/protobuf/ptypes"
 
 	common "github.com/Sensory-Cloud/go-sdk/pkg/generated/common"
 )
@@ -32,7 +32,7 @@ var (
 	_ = time.Duration(0)
 	_ = (*url.URL)(nil)
 	_ = (*mail.Address)(nil)
-	_ = anypb.Any{}
+	_ = ptypes.DynamicAny{}
 
 	_ = common.ModelType(0)
 
@@ -1416,6 +1416,169 @@ var _ interface {
 	ErrorName() string
 } = ValidateEnrolledEventResponseValidationError{}
 
+// Validate checks the field values on TranscribeWord with the rules defined in
+// the proto definition for this message. If any rules are violated, an error
+// is returned.
+func (m *TranscribeWord) Validate() error {
+	if m == nil {
+		return nil
+	}
+
+	// no validation rules for BegintimeMs
+
+	// no validation rules for EndtimeMs
+
+	// no validation rules for Confidence
+
+	// no validation rules for WordState
+
+	// no validation rules for WordIndex
+
+	// no validation rules for Word
+
+	return nil
+}
+
+// TranscribeWordValidationError is the validation error returned by
+// TranscribeWord.Validate if the designated constraints aren't met.
+type TranscribeWordValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e TranscribeWordValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e TranscribeWordValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e TranscribeWordValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e TranscribeWordValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e TranscribeWordValidationError) ErrorName() string { return "TranscribeWordValidationError" }
+
+// Error satisfies the builtin error interface
+func (e TranscribeWordValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sTranscribeWord.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = TranscribeWordValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = TranscribeWordValidationError{}
+
+// Validate checks the field values on TranscribeWordResponse with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, an error is returned.
+func (m *TranscribeWordResponse) Validate() error {
+	if m == nil {
+		return nil
+	}
+
+	for idx, item := range m.GetWords() {
+		_, _ = idx, item
+
+		if v, ok := interface{}(item).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return TranscribeWordResponseValidationError{
+					field:  fmt.Sprintf("Words[%v]", idx),
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
+	}
+
+	// no validation rules for FirstWordIndex
+
+	// no validation rules for LastWordIndex
+
+	return nil
+}
+
+// TranscribeWordResponseValidationError is the validation error returned by
+// TranscribeWordResponse.Validate if the designated constraints aren't met.
+type TranscribeWordResponseValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e TranscribeWordResponseValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e TranscribeWordResponseValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e TranscribeWordResponseValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e TranscribeWordResponseValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e TranscribeWordResponseValidationError) ErrorName() string {
+	return "TranscribeWordResponseValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e TranscribeWordResponseValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sTranscribeWordResponse.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = TranscribeWordResponseValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = TranscribeWordResponseValidationError{}
+
 // Validate checks the field values on TranscribeResponse with the rules
 // defined in the proto definition for this message. If any rules are
 // violated, an error is returned.
@@ -1429,6 +1592,16 @@ func (m *TranscribeResponse) Validate() error {
 	// no validation rules for Transcript
 
 	// no validation rules for IsPartialResult
+
+	if v, ok := interface{}(m.GetWordList()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return TranscribeResponseValidationError{
+				field:  "WordList",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
 
 	if v, ok := interface{}(m.GetPostProcessingAction()).(interface{ Validate() error }); ok {
 		if err := v.Validate(); err != nil {
@@ -2022,8 +2195,6 @@ func (m *CreateEnrollmentEventConfig) Validate() error {
 			reason: "value length must be at most 127 runes",
 		}
 	}
-
-	// no validation rules for DisableServerEnrollmentTemplateStorage
 
 	switch m.EnrollLength.(type) {
 

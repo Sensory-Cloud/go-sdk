@@ -1,6 +1,6 @@
 package client_version
 
 const (
-	BuildVersion string = "v0.10.1"
-	BuildTime    string = "Mon May  9 08:39:36 MDT 2022"
+	BuildVersion string = "v0.15.0"
+	BuildTime    string = "Wed Jul 27 16:34:31 MDT 2022"
 )

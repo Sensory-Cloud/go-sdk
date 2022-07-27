@@ -15,7 +15,7 @@ import (
 	"time"
 	"unicode/utf8"
 
-	"google.golang.org/protobuf/types/known/anypb"
+	"github.com/golang/protobuf/ptypes"
 
 	common "github.com/Sensory-Cloud/go-sdk/pkg/generated/common"
 )
@@ -32,7 +32,7 @@ var (
 	_ = time.Duration(0)
 	_ = (*url.URL)(nil)
 	_ = (*mail.Address)(nil)
-	_ = anypb.Any{}
+	_ = ptypes.DynamicAny{}
 
 	_ = common.UsageEventType(0)
 
@@ -311,6 +311,8 @@ func (m *UsageEventResponse) Validate() error {
 	// no validation rules for TenantId
 
 	// no validation rules for BillableFunction
+
+	// no validation rules for Credits
 
 	return nil
 }
@@ -667,6 +669,8 @@ func (m *UsageEventModelSummary) Validate() error {
 	// no validation rules for Value
 
 	// no validation rules for Count
+
+	// no validation rules for Credits
 
 	return nil
 }
