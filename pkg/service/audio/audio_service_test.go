@@ -2,19 +2,11 @@ package audio_service_test
 
 import (
 	"context"
-	"fmt"
-	"io"
-	"io/ioutil"
 	"testing"
-	"time"
 
-	"github.com/Sensory-Cloud/go-sdk/pkg/config"
 	"github.com/Sensory-Cloud/go-sdk/pkg/generated/common"
 	audio_api_v1 "github.com/Sensory-Cloud/go-sdk/pkg/generated/v1/audio"
-	"github.com/Sensory-Cloud/go-sdk/pkg/initializer"
 	audio_service "github.com/Sensory-Cloud/go-sdk/pkg/service/audio"
-	oauth_service "github.com/Sensory-Cloud/go-sdk/pkg/service/oauth"
-	token_manager "github.com/Sensory-Cloud/go-sdk/pkg/token"
 	error_util "github.com/Sensory-Cloud/go-sdk/pkg/util/error"
 	test_util "github.com/Sensory-Cloud/go-sdk/pkg/util/test"
 	"google.golang.org/grpc"
@@ -180,145 +172,6 @@ func TestSynthesizeSpeech(t *testing.T) {
 	stream, err = mockAudioService.SynthesizeSpeech(ctx, &audio_api_v1.SynthesizeSpeechRequest{})
 	test_util.Assert(t, err != nil, "err should be nil")
 	test_util.Assert(t, stream == nil, "stream should be nil")
-}
-
-func TestTranscription(t *testing.T) {
-	sdkConfig := config.SDKInitConfig{
-		FullyQualifiedDomainName: "io.stage.cloud.sensory.com:443",
-		IsSecure:                 true,
-		TenantID:                 "cabb7700-206f-4cc7-8e79-cd7f288aa78d",
-		EnrollmentType:           config.SharedSecret,
-		Credential:               "Enroll123Sensory!!",
-		DeviceID:                 "jhersch-macos-test-2",
-		DeviceName:               "jhersch-macos-test-2",
-	}
-
-	credentialStore := NewMockSecureTokenStore()
-	credentialStore.SaveCredentials("ed7dc15f-572b-4084-9942-f4810e6b6bfe", "4Env25cie41gLA2X6jOhdfMA")
-
-	init := initializer.NewInitializer(credentialStore, nil)
-	ctx := context.Background()
-	ctx, cancel := context.WithTimeout(ctx, time.Minute)
-	defer cancel()
-	clientConfig, _, err := init.Initialize(ctx, sdkConfig)
-	test_util.AssertOk(t, err)
-
-	onClose, err := clientConfig.Connect()
-	test_util.AssertOk(t, err)
-	defer onClose()
-
-	oauthService, err := oauth_service.NewOauthService(clientConfig, credentialStore)
-	test_util.AssertOk(t, err)
-	tokenManager := token_manager.NewTokenManager(oauthService)
-
-	audioService, err := audio_service.NewAudioService(clientConfig, tokenManager)
-	test_util.AssertOk(t, err)
-
-	audioConfig := &audio_api_v1.AudioConfig{
-		Encoding:          audio_api_v1.AudioConfig_LINEAR16,
-		SampleRateHertz:   16000,
-		AudioChannelCount: 1,
-		LanguageCode:      "en-US",
-	}
-
-	transcribeConfig := &audio_api_v1.TranscribeConfig{
-		Audio:                           audioConfig,
-		ModelName:                       "speech_recognition_en",
-		UserId:                          "jhersch-ini-test",
-		EnablePunctuationCapitalization: false,
-		DoSingleUtterance:               false,
-		VadSensitivity:                  audio_api_v1.ThresholdSensitivity_LOW,
-		VadDuration:                     0.0,
-		CustomVocabRewardThreshold:      audio_api_v1.ThresholdSensitivity_LOW,
-		CustomVocabularyId:              "",
-		CustomWordList:                  nil,
-	}
-
-	stream, err := audioService.StreamTranscription(ctx, transcribeConfig)
-	test_util.AssertOk(t, err)
-
-	// Create channels to handle communication between goroutines
-	errorChan := make(chan error)
-	responseChan := make(chan *audio_api_v1.TranscribeResponse, 10)
-	requestChan := make(chan *audio_api_v1.TranscribeRequest, 3)
-
-	audioBytes, err := ioutil.ReadFile("/Users/jonathanhersch/Desktop/open-sesame.wav")
-	test_util.AssertOk(t, err)
-
-	// Populate the request channel
-	chunkSize := 8000
-	numBytes := len(audioBytes)
-	postProcessing := audio_api_v1.AudioPostProcessingAction_NOT_SET
-	go func() {
-		for idx := 0; idx < numBytes; idx += chunkSize {
-			end := idx + chunkSize
-
-			if end > numBytes {
-				end = numBytes
-				postProcessing = audio_api_v1.AudioPostProcessingAction_FINAL
-			}
-
-			requestChan <- &audio_api_v1.TranscribeRequest{
-				StreamingRequest: &audio_api_v1.TranscribeRequest_AudioContent{
-					AudioContent: audioBytes[idx:end],
-				},
-				PostProcessingAction: &audio_api_v1.AudioRequestPostProcessingAction{
-					Action: postProcessing,
-				},
-			}
-		}
-	}()
-
-	// Listen for responses on the gRPC pipe on a separate goroutine
-	go func() {
-		for {
-			response, err := stream.Recv()
-			if err != nil {
-				errorChan <- err
-				break
-			}
-
-			responseChan <- response
-		}
-	}()
-
-	aggregator := audio_service.FullTranscriptAggregator{}
-	exitLoop := false
-	for {
-		select {
-		// Watch for errors
-		case err := <-errorChan:
-			fmt.Println(err)
-			if err == io.EOF {
-				exitLoop = true
-				break
-			}
-
-		// Or timeout after 1 minute
-		case <-time.NewTimer(time.Minute).C:
-			fmt.Println(err)
-			exitLoop = true
-			break
-
-		// Read responses on the main goroutine
-		case response := <-responseChan:
-			// Process response and pring curren transcript
-			aggregator.ProcessResponse(response.WordList)
-			fmt.Println(aggregator.GetCurrentTranscript(" "))
-
-		// Send transcribe requests to server
-		case request := <-requestChan:
-			err := stream.Send(request)
-			if err != nil {
-				fmt.Println(err)
-				break
-			}
-		}
-
-		if exitLoop {
-			break
-		}
-	}
 }
 
 // Mock Token Manager
