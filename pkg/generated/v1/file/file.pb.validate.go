@@ -11,11 +11,12 @@ import (
 	"net/mail"
 	"net/url"
 	"regexp"
+	"sort"
 	"strings"
 	"time"
 	"unicode/utf8"
 
-	"github.com/golang/protobuf/ptypes"
+	"google.golang.org/protobuf/types/known/anypb"
 )
 
 // ensure the imports are used
@@ -30,28 +31,63 @@ var (
 	_ = time.Duration(0)
 	_ = (*url.URL)(nil)
 	_ = (*mail.Address)(nil)
-	_ = ptypes.DynamicAny{}
+	_ = anypb.Any{}
+	_ = sort.Sort
 )
 
-// define the regex for a UUID once up-front
-var _file_uuidPattern = regexp.MustCompile("^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$")
-
 // Validate checks the field values on FileRequest with the rules defined in
-// the proto definition for this message. If any rules are violated, an error
-// is returned.
+// the proto definition for this message. If any rules are violated, the first
+// error encountered is returned, or nil if there are no violations.
 func (m *FileRequest) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on FileRequest with the rules defined in
+// the proto definition for this message. If any rules are violated, the
+// result is a list of violation errors wrapped in FileRequestMultiError, or
+// nil if none found.
+func (m *FileRequest) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *FileRequest) validate(all bool) error {
 	if m == nil {
 		return nil
 	}
 
+	var errors []error
+
 	if l := utf8.RuneCountInString(m.GetFile()); l < 1 || l > 2047 {
-		return FileRequestValidationError{
+		err := FileRequestValidationError{
 			field:  "File",
 			reason: "value length must be between 1 and 2047 runes, inclusive",
 		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
 	}
 
-	if v, ok := interface{}(m.GetCategory()).(interface{ Validate() error }); ok {
+	if all {
+		switch v := interface{}(m.GetCategory()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, FileRequestValidationError{
+					field:  "Category",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, FileRequestValidationError{
+					field:  "Category",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetCategory()).(interface{ Validate() error }); ok {
 		if err := v.Validate(); err != nil {
 			return FileRequestValidationError{
 				field:  "Category",
@@ -63,8 +99,28 @@ func (m *FileRequest) Validate() error {
 
 	// no validation rules for Offset
 
+	if len(errors) > 0 {
+		return FileRequestMultiError(errors)
+	}
+
 	return nil
 }
+
+// FileRequestMultiError is an error wrapping multiple validation errors
+// returned by FileRequest.ValidateAll() if the designated constraints aren't met.
+type FileRequestMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m FileRequestMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m FileRequestMultiError) AllErrors() []error { return m }
 
 // FileRequestValidationError is the validation error returned by
 // FileRequest.Validate if the designated constraints aren't met.
@@ -121,20 +177,62 @@ var _ interface {
 } = FileRequestValidationError{}
 
 // Validate checks the field values on FileResponse with the rules defined in
-// the proto definition for this message. If any rules are violated, an error
-// is returned.
+// the proto definition for this message. If any rules are violated, the first
+// error encountered is returned, or nil if there are no violations.
 func (m *FileResponse) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on FileResponse with the rules defined
+// in the proto definition for this message. If any rules are violated, the
+// result is a list of violation errors wrapped in FileResponseMultiError, or
+// nil if none found.
+func (m *FileResponse) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *FileResponse) validate(all bool) error {
 	if m == nil {
 		return nil
 	}
 
+	var errors []error
+
 	// no validation rules for Complete
 
-	switch m.StreamingResponse.(type) {
-
+	switch v := m.StreamingResponse.(type) {
 	case *FileResponse_Info:
+		if v == nil {
+			err := FileResponseValidationError{
+				field:  "StreamingResponse",
+				reason: "oneof value cannot be a typed-nil",
+			}
+			if !all {
+				return err
+			}
+			errors = append(errors, err)
+		}
 
-		if v, ok := interface{}(m.GetInfo()).(interface{ Validate() error }); ok {
+		if all {
+			switch v := interface{}(m.GetInfo()).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, FileResponseValidationError{
+						field:  "Info",
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, FileResponseValidationError{
+						field:  "Info",
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(m.GetInfo()).(interface{ Validate() error }); ok {
 			if err := v.Validate(); err != nil {
 				return FileResponseValidationError{
 					field:  "Info",
@@ -145,8 +243,37 @@ func (m *FileResponse) Validate() error {
 		}
 
 	case *FileResponse_Chunk:
+		if v == nil {
+			err := FileResponseValidationError{
+				field:  "StreamingResponse",
+				reason: "oneof value cannot be a typed-nil",
+			}
+			if !all {
+				return err
+			}
+			errors = append(errors, err)
+		}
 
-		if v, ok := interface{}(m.GetChunk()).(interface{ Validate() error }); ok {
+		if all {
+			switch v := interface{}(m.GetChunk()).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, FileResponseValidationError{
+						field:  "Chunk",
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, FileResponseValidationError{
+						field:  "Chunk",
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(m.GetChunk()).(interface{ Validate() error }); ok {
 			if err := v.Validate(); err != nil {
 				return FileResponseValidationError{
 					field:  "Chunk",
@@ -156,10 +283,32 @@ func (m *FileResponse) Validate() error {
 			}
 		}
 
+	default:
+		_ = v // ensures v is used
+	}
+
+	if len(errors) > 0 {
+		return FileResponseMultiError(errors)
 	}
 
 	return nil
 }
+
+// FileResponseMultiError is an error wrapping multiple validation errors
+// returned by FileResponse.ValidateAll() if the designated constraints aren't met.
+type FileResponseMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m FileResponseMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m FileResponseMultiError) AllErrors() []error { return m }
 
 // FileResponseValidationError is the validation error returned by
 // FileResponse.Validate if the designated constraints aren't met.
@@ -217,23 +366,60 @@ var _ interface {
 
 // Validate checks the field values on FileCatalogRequest with the rules
 // defined in the proto definition for this message. If any rules are
-// violated, an error is returned.
+// violated, the first error encountered is returned, or nil if there are no violations.
 func (m *FileCatalogRequest) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on FileCatalogRequest with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// FileCatalogRequestMultiError, or nil if none found.
+func (m *FileCatalogRequest) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *FileCatalogRequest) validate(all bool) error {
 	if m == nil {
 		return nil
 	}
 
+	var errors []error
+
 	if len(m.GetCategories()) < 1 {
-		return FileCatalogRequestValidationError{
+		err := FileCatalogRequestValidationError{
 			field:  "Categories",
 			reason: "value must contain at least 1 item(s)",
 		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
 	}
 
 	for idx, item := range m.GetCategories() {
 		_, _ = idx, item
 
-		if v, ok := interface{}(item).(interface{ Validate() error }); ok {
+		if all {
+			switch v := interface{}(item).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, FileCatalogRequestValidationError{
+						field:  fmt.Sprintf("Categories[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, FileCatalogRequestValidationError{
+						field:  fmt.Sprintf("Categories[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(item).(interface{ Validate() error }); ok {
 			if err := v.Validate(); err != nil {
 				return FileCatalogRequestValidationError{
 					field:  fmt.Sprintf("Categories[%v]", idx),
@@ -245,8 +431,29 @@ func (m *FileCatalogRequest) Validate() error {
 
 	}
 
+	if len(errors) > 0 {
+		return FileCatalogRequestMultiError(errors)
+	}
+
 	return nil
 }
+
+// FileCatalogRequestMultiError is an error wrapping multiple validation errors
+// returned by FileCatalogRequest.ValidateAll() if the designated constraints
+// aren't met.
+type FileCatalogRequestMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m FileCatalogRequestMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m FileCatalogRequestMultiError) AllErrors() []error { return m }
 
 // FileCatalogRequestValidationError is the validation error returned by
 // FileCatalogRequest.Validate if the designated constraints aren't met.
@@ -306,16 +513,51 @@ var _ interface {
 
 // Validate checks the field values on FileCompleteCatalogRequest with the
 // rules defined in the proto definition for this message. If any rules are
-// violated, an error is returned.
+// violated, the first error encountered is returned, or nil if there are no violations.
 func (m *FileCompleteCatalogRequest) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on FileCompleteCatalogRequest with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// FileCompleteCatalogRequestMultiError, or nil if none found.
+func (m *FileCompleteCatalogRequest) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *FileCompleteCatalogRequest) validate(all bool) error {
 	if m == nil {
 		return nil
 	}
 
+	var errors []error
+
 	// no validation rules for TenantId
+
+	if len(errors) > 0 {
+		return FileCompleteCatalogRequestMultiError(errors)
+	}
 
 	return nil
 }
+
+// FileCompleteCatalogRequestMultiError is an error wrapping multiple
+// validation errors returned by FileCompleteCatalogRequest.ValidateAll() if
+// the designated constraints aren't met.
+type FileCompleteCatalogRequestMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m FileCompleteCatalogRequestMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m FileCompleteCatalogRequestMultiError) AllErrors() []error { return m }
 
 // FileCompleteCatalogRequestValidationError is the validation error returned
 // by FileCompleteCatalogRequest.Validate if the designated constraints aren't met.
@@ -375,16 +617,49 @@ var _ interface {
 
 // Validate checks the field values on FileCatalogResponse with the rules
 // defined in the proto definition for this message. If any rules are
-// violated, an error is returned.
+// violated, the first error encountered is returned, or nil if there are no violations.
 func (m *FileCatalogResponse) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on FileCatalogResponse with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// FileCatalogResponseMultiError, or nil if none found.
+func (m *FileCatalogResponse) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *FileCatalogResponse) validate(all bool) error {
 	if m == nil {
 		return nil
 	}
 
+	var errors []error
+
 	for idx, item := range m.GetCatalog() {
 		_, _ = idx, item
 
-		if v, ok := interface{}(item).(interface{ Validate() error }); ok {
+		if all {
+			switch v := interface{}(item).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, FileCatalogResponseValidationError{
+						field:  fmt.Sprintf("Catalog[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, FileCatalogResponseValidationError{
+						field:  fmt.Sprintf("Catalog[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(item).(interface{ Validate() error }); ok {
 			if err := v.Validate(); err != nil {
 				return FileCatalogResponseValidationError{
 					field:  fmt.Sprintf("Catalog[%v]", idx),
@@ -396,8 +671,29 @@ func (m *FileCatalogResponse) Validate() error {
 
 	}
 
+	if len(errors) > 0 {
+		return FileCatalogResponseMultiError(errors)
+	}
+
 	return nil
 }
+
+// FileCatalogResponseMultiError is an error wrapping multiple validation
+// errors returned by FileCatalogResponse.ValidateAll() if the designated
+// constraints aren't met.
+type FileCatalogResponseMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m FileCatalogResponseMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m FileCatalogResponseMultiError) AllErrors() []error { return m }
 
 // FileCatalogResponseValidationError is the validation error returned by
 // FileCatalogResponse.Validate if the designated constraints aren't met.
@@ -456,18 +752,53 @@ var _ interface {
 } = FileCatalogResponseValidationError{}
 
 // Validate checks the field values on FileChunk with the rules defined in the
-// proto definition for this message. If any rules are violated, an error is returned.
+// proto definition for this message. If any rules are violated, the first
+// error encountered is returned, or nil if there are no violations.
 func (m *FileChunk) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on FileChunk with the rules defined in
+// the proto definition for this message. If any rules are violated, the
+// result is a list of violation errors wrapped in FileChunkMultiError, or nil
+// if none found.
+func (m *FileChunk) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *FileChunk) validate(all bool) error {
 	if m == nil {
 		return nil
 	}
+
+	var errors []error
 
 	// no validation rules for Bytes
 
 	// no validation rules for Offset
 
+	if len(errors) > 0 {
+		return FileChunkMultiError(errors)
+	}
+
 	return nil
 }
+
+// FileChunkMultiError is an error wrapping multiple validation errors returned
+// by FileChunk.ValidateAll() if the designated constraints aren't met.
+type FileChunkMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m FileChunkMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m FileChunkMultiError) AllErrors() []error { return m }
 
 // FileChunkValidationError is the validation error returned by
 // FileChunk.Validate if the designated constraints aren't met.
@@ -524,11 +855,26 @@ var _ interface {
 } = FileChunkValidationError{}
 
 // Validate checks the field values on FileInfo with the rules defined in the
-// proto definition for this message. If any rules are violated, an error is returned.
+// proto definition for this message. If any rules are violated, the first
+// error encountered is returned, or nil if there are no violations.
 func (m *FileInfo) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on FileInfo with the rules defined in
+// the proto definition for this message. If any rules are violated, the
+// result is a list of violation errors wrapped in FileInfoMultiError, or nil
+// if none found.
+func (m *FileInfo) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *FileInfo) validate(all bool) error {
 	if m == nil {
 		return nil
 	}
+
+	var errors []error
 
 	// no validation rules for File
 
@@ -542,8 +888,28 @@ func (m *FileInfo) Validate() error {
 
 	// no validation rules for TenantId
 
+	if len(errors) > 0 {
+		return FileInfoMultiError(errors)
+	}
+
 	return nil
 }
+
+// FileInfoMultiError is an error wrapping multiple validation errors returned
+// by FileInfo.ValidateAll() if the designated constraints aren't met.
+type FileInfoMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m FileInfoMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m FileInfoMultiError) AllErrors() []error { return m }
 
 // FileInfoValidationError is the validation error returned by
 // FileInfo.Validate if the designated constraints aren't met.
@@ -600,17 +966,50 @@ var _ interface {
 } = FileInfoValidationError{}
 
 // Validate checks the field values on FileCatalog with the rules defined in
-// the proto definition for this message. If any rules are violated, an error
-// is returned.
+// the proto definition for this message. If any rules are violated, the first
+// error encountered is returned, or nil if there are no violations.
 func (m *FileCatalog) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on FileCatalog with the rules defined in
+// the proto definition for this message. If any rules are violated, the
+// result is a list of violation errors wrapped in FileCatalogMultiError, or
+// nil if none found.
+func (m *FileCatalog) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *FileCatalog) validate(all bool) error {
 	if m == nil {
 		return nil
 	}
 
+	var errors []error
+
 	for idx, item := range m.GetFiles() {
 		_, _ = idx, item
 
-		if v, ok := interface{}(item).(interface{ Validate() error }); ok {
+		if all {
+			switch v := interface{}(item).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, FileCatalogValidationError{
+						field:  fmt.Sprintf("Files[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, FileCatalogValidationError{
+						field:  fmt.Sprintf("Files[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(item).(interface{ Validate() error }); ok {
 			if err := v.Validate(); err != nil {
 				return FileCatalogValidationError{
 					field:  fmt.Sprintf("Files[%v]", idx),
@@ -622,7 +1021,26 @@ func (m *FileCatalog) Validate() error {
 
 	}
 
-	if v, ok := interface{}(m.GetCategory()).(interface{ Validate() error }); ok {
+	if all {
+		switch v := interface{}(m.GetCategory()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, FileCatalogValidationError{
+					field:  "Category",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, FileCatalogValidationError{
+					field:  "Category",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetCategory()).(interface{ Validate() error }); ok {
 		if err := v.Validate(); err != nil {
 			return FileCatalogValidationError{
 				field:  "Category",
@@ -632,8 +1050,28 @@ func (m *FileCatalog) Validate() error {
 		}
 	}
 
+	if len(errors) > 0 {
+		return FileCatalogMultiError(errors)
+	}
+
 	return nil
 }
+
+// FileCatalogMultiError is an error wrapping multiple validation errors
+// returned by FileCatalog.ValidateAll() if the designated constraints aren't met.
+type FileCatalogMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m FileCatalogMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m FileCatalogMultiError) AllErrors() []error { return m }
 
 // FileCatalogValidationError is the validation error returned by
 // FileCatalog.Validate if the designated constraints aren't met.
@@ -691,23 +1129,62 @@ var _ interface {
 
 // Validate checks the field values on VersionedFileCategory with the rules
 // defined in the proto definition for this message. If any rules are
-// violated, an error is returned.
+// violated, the first error encountered is returned, or nil if there are no violations.
 func (m *VersionedFileCategory) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on VersionedFileCategory with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// VersionedFileCategoryMultiError, or nil if none found.
+func (m *VersionedFileCategory) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *VersionedFileCategory) validate(all bool) error {
 	if m == nil {
 		return nil
 	}
 
+	var errors []error
+
 	if _, ok := FileCategory_name[int32(m.GetCategory())]; !ok {
-		return VersionedFileCategoryValidationError{
+		err := VersionedFileCategoryValidationError{
 			field:  "Category",
 			reason: "value must be one of the defined enum values",
 		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
 	}
 
 	// no validation rules for Version
 
+	if len(errors) > 0 {
+		return VersionedFileCategoryMultiError(errors)
+	}
+
 	return nil
 }
+
+// VersionedFileCategoryMultiError is an error wrapping multiple validation
+// errors returned by VersionedFileCategory.ValidateAll() if the designated
+// constraints aren't met.
+type VersionedFileCategoryMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m VersionedFileCategoryMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m VersionedFileCategoryMultiError) AllErrors() []error { return m }
 
 // VersionedFileCategoryValidationError is the validation error returned by
 // VersionedFileCategory.Validate if the designated constraints aren't met.

@@ -39,7 +39,7 @@ type IOauthService interface {
 }
 
 type OauthService struct {
-	config                *config.ClientConfig
+	config                config.IClientConfig
 	oauthClient           oauth.OauthServiceClient
 	deviceClient          management_api_v1.DeviceServiceClient
 	SecureCredentialStore ISecureCredentialStore
@@ -51,7 +51,7 @@ type OauthClient struct {
 }
 
 // NewOauthService creates a new service to handle OAuth authentication with Sensory Cloud
-func NewOauthService(config *config.ClientConfig, secureCredentialStore ISecureCredentialStore) (IOauthService, error) {
+func NewOauthService(config config.IClientConfig, secureCredentialStore ISecureCredentialStore) (IOauthService, error) {
 	client, err := config.GetClient()
 	if err != nil {
 		return nil, err
@@ -117,10 +117,10 @@ func (s *OauthService) Register(ctx context.Context, deviceName string, credenti
 	client := common.GenericClient{ClientId: clientId, Secret: clientSecret}
 	request := management_api_v1.EnrollDeviceRequest{
 		Client:     &client,
-		DeviceId:   s.config.DeviceId,
+		DeviceId:   s.config.GetDeviceId(),
 		Name:       deviceName,
 		Credential: credential,
-		TenantId:   s.config.TenantId,
+		TenantId:   s.config.GetTenantId(),
 	}
 
 	return s.deviceClient.EnrollDevice(ctx, &request)
@@ -136,9 +136,29 @@ func (s *OauthService) RenewDeviceCredential(ctx context.Context, credential str
 	request := management_api_v1.RenewDeviceCredentialRequest{
 		ClientId:   clientId,
 		Credential: credential,
-		DeviceId:   s.config.DeviceId,
-		TenantId:   s.config.TenantId,
+		DeviceId:   s.config.GetDeviceId(),
+		TenantId:   s.config.GetTenantId(),
 	}
 
 	return s.deviceClient.RenewDeviceCredential(ctx, &request)
+}
+
+// Set client config
+func (s *OauthService) SetConfig(config config.IClientConfig) {
+	s.config = config
+}
+
+// Set oath client
+func (s *OauthService) SetOauthClient(client oauth.OauthServiceClient) {
+	s.oauthClient = client
+}
+
+// Set device client
+func (s *OauthService) SetDeviceClient(client management_api_v1.DeviceServiceClient) {
+	s.deviceClient = client
+}
+
+// Set secure credential store
+func (s *OauthService) SetSecureCredentialStore(credentialStore ISecureCredentialStore) {
+	s.SecureCredentialStore = credentialStore
 }

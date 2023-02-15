@@ -11,7 +11,7 @@ import (
 
 var (
 	// Initializer function to create a new oauth service. Should only be changed for unit testing
-	OauthServiceInit func(*config.ClientConfig, oauth_service.ISecureCredentialStore) (oauth_service.IOauthService, error) = oauth_service.NewOauthService
+	OauthServiceInit func(config.IClientConfig, oauth_service.ISecureCredentialStore) (oauth_service.IOauthService, error) = oauth_service.NewOauthService
 )
 
 // Creates a signed JWT for device enrollment
@@ -34,8 +34,8 @@ type Initializer struct {
 
 // Creates a new initializer object
 // Parameters:
-//  - credentialStore: Secure credential store for oauth credentials
-//  - jwtSigner: Signer to create a signed enrollment jwt with. This may be nil if enrollment type is not `jwt`
+//   - credentialStore: Secure credential store for oauth credentials
+//   - jwtSigner: Signer to create a signed enrollment jwt with. This may be nil if enrollment type is not `jwt`
 func NewInitializer(credentialStore oauth_service.ISecureCredentialStore, jwtSigner IJWTSigner) *Initializer {
 	return &Initializer{secureCredentialStore: credentialStore, jwtSigner: jwtSigner}
 }

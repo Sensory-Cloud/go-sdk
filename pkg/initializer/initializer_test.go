@@ -112,7 +112,7 @@ func NewMockOauthService() *mockOauthService {
 	return &mockOauthService{nil, "", "", nil, nil}
 }
 
-func GetMockOauthService(config *config.ClientConfig, credentialStore oauth_service.ISecureCredentialStore) (oauth_service.IOauthService, error) {
+func GetMockOauthService(config config.IClientConfig, credentialStore oauth_service.ISecureCredentialStore) (oauth_service.IOauthService, error) {
 	return mockService, nil
 }
 

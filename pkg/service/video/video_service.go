@@ -9,7 +9,7 @@ import (
 )
 
 type VideoService struct {
-	config                 *config.ClientConfig
+	config                 config.IClientConfig
 	tokenManager           token_manager.IAuthorizationMetadataService
 	videoBiometricsClient  video_api_v1.VideoBiometricsClient
 	videoModelsClient      video_api_v1.VideoModelsClient
@@ -17,7 +17,7 @@ type VideoService struct {
 }
 
 // NewVideoService creates a service to handle image requests to Sensory Cloud
-func NewVideoService(config *config.ClientConfig, tokenManager token_manager.IAuthorizationMetadataService) (*VideoService, error) {
+func NewVideoService(config config.IClientConfig, tokenManager token_manager.IAuthorizationMetadataService) (*VideoService, error) {
 	client, err := config.GetClient()
 	if err != nil {
 		return nil, err
@@ -29,7 +29,7 @@ func NewVideoService(config *config.ClientConfig, tokenManager token_manager.IAu
 	return &VideoService{config, tokenManager, videoBiometricsClient, videoModelsClient, videoRecognitionClient}, nil
 }
 
-//  Fetch all the vision models supported by your instance of Sensory Cloud.
+// Fetch all the vision models supported by your instance of Sensory Cloud.
 func (s *VideoService) GetModels(ctx context.Context) (*video_api_v1.GetModelsResponse, error) {
 	ctx, err := s.tokenManager.SetAuthorizationMetadata(ctx)
 	if err != nil {
@@ -111,4 +111,29 @@ func (s *VideoService) StreamLivenessRecognition(ctx context.Context, config *vi
 	}
 
 	return authenticationStream, nil
+}
+
+// Set client config
+func (s *VideoService) SetClientConfig(config config.IClientConfig) {
+	s.config = config
+}
+
+// Set token manager
+func (s *VideoService) SetTokenManager(tokenManager token_manager.IAuthorizationMetadataService) {
+	s.tokenManager = tokenManager
+}
+
+// Set video biometrics client
+func (s *VideoService) SetVideoBiometricsClient(client video_api_v1.VideoBiometricsClient) {
+	s.videoBiometricsClient = client
+}
+
+// Set video models cient
+func (s *VideoService) SetVideoModelsClient(client video_api_v1.VideoModelsClient) {
+	s.videoModelsClient = client
+}
+
+// Set video recognition client
+func (s *VideoService) SetVideoRecognitionClient(client video_api_v1.VideoRecognitionClient) {
+	s.videoRecognitionClient = client
 }

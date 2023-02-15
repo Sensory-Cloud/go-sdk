@@ -11,11 +11,12 @@ import (
 	"net/mail"
 	"net/url"
 	"regexp"
+	"sort"
 	"strings"
 	"time"
 	"unicode/utf8"
 
-	"github.com/golang/protobuf/ptypes"
+	"google.golang.org/protobuf/types/known/anypb"
 )
 
 // ensure the imports are used
@@ -30,7 +31,8 @@ var (
 	_ = time.Duration(0)
 	_ = (*url.URL)(nil)
 	_ = (*mail.Address)(nil)
-	_ = ptypes.DynamicAny{}
+	_ = anypb.Any{}
+	_ = sort.Sort
 )
 
 // define the regex for a UUID once up-front
@@ -38,42 +40,91 @@ var _device_uuidPattern = regexp.MustCompile("^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-
 
 // Validate checks the field values on EnrollDeviceRequest with the rules
 // defined in the proto definition for this message. If any rules are
-// violated, an error is returned.
+// violated, the first error encountered is returned, or nil if there are no violations.
 func (m *EnrollDeviceRequest) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on EnrollDeviceRequest with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// EnrollDeviceRequestMultiError, or nil if none found.
+func (m *EnrollDeviceRequest) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *EnrollDeviceRequest) validate(all bool) error {
 	if m == nil {
 		return nil
 	}
 
+	var errors []error
+
 	if l := utf8.RuneCountInString(m.GetName()); l < 1 || l > 127 {
-		return EnrollDeviceRequestValidationError{
+		err := EnrollDeviceRequestValidationError{
 			field:  "Name",
 			reason: "value length must be between 1 and 127 runes, inclusive",
 		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
 	}
 
 	if l := utf8.RuneCountInString(m.GetDeviceId()); l < 1 || l > 127 {
-		return EnrollDeviceRequestValidationError{
+		err := EnrollDeviceRequestValidationError{
 			field:  "DeviceId",
 			reason: "value length must be between 1 and 127 runes, inclusive",
 		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
 	}
 
 	if err := m._validateUuid(m.GetTenantId()); err != nil {
-		return EnrollDeviceRequestValidationError{
+		err = EnrollDeviceRequestValidationError{
 			field:  "TenantId",
 			reason: "value must be a valid UUID",
 			cause:  err,
 		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
 	}
 
 	if m.GetClient() == nil {
-		return EnrollDeviceRequestValidationError{
+		err := EnrollDeviceRequestValidationError{
 			field:  "Client",
 			reason: "value is required",
 		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
 	}
 
-	if v, ok := interface{}(m.GetClient()).(interface{ Validate() error }); ok {
+	if all {
+		switch v := interface{}(m.GetClient()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, EnrollDeviceRequestValidationError{
+					field:  "Client",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, EnrollDeviceRequestValidationError{
+					field:  "Client",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetClient()).(interface{ Validate() error }); ok {
 		if err := v.Validate(); err != nil {
 			return EnrollDeviceRequestValidationError{
 				field:  "Client",
@@ -85,6 +136,10 @@ func (m *EnrollDeviceRequest) Validate() error {
 
 	// no validation rules for Credential
 
+	if len(errors) > 0 {
+		return EnrollDeviceRequestMultiError(errors)
+	}
+
 	return nil
 }
 
@@ -95,6 +150,23 @@ func (m *EnrollDeviceRequest) _validateUuid(uuid string) error {
 
 	return nil
 }
+
+// EnrollDeviceRequestMultiError is an error wrapping multiple validation
+// errors returned by EnrollDeviceRequest.ValidateAll() if the designated
+// constraints aren't met.
+type EnrollDeviceRequestMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m EnrollDeviceRequestMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m EnrollDeviceRequestMultiError) AllErrors() []error { return m }
 
 // EnrollDeviceRequestValidationError is the validation error returned by
 // EnrollDeviceRequest.Validate if the designated constraints aren't met.
@@ -154,40 +226,74 @@ var _ interface {
 
 // Validate checks the field values on RenewDeviceCredentialRequest with the
 // rules defined in the proto definition for this message. If any rules are
-// violated, an error is returned.
+// violated, the first error encountered is returned, or nil if there are no violations.
 func (m *RenewDeviceCredentialRequest) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on RenewDeviceCredentialRequest with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// RenewDeviceCredentialRequestMultiError, or nil if none found.
+func (m *RenewDeviceCredentialRequest) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *RenewDeviceCredentialRequest) validate(all bool) error {
 	if m == nil {
 		return nil
 	}
 
+	var errors []error
+
 	if l := utf8.RuneCountInString(m.GetDeviceId()); l < 1 || l > 127 {
-		return RenewDeviceCredentialRequestValidationError{
+		err := RenewDeviceCredentialRequestValidationError{
 			field:  "DeviceId",
 			reason: "value length must be between 1 and 127 runes, inclusive",
 		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
 	}
 
 	if err := m._validateUuid(m.GetClientId()); err != nil {
-		return RenewDeviceCredentialRequestValidationError{
+		err = RenewDeviceCredentialRequestValidationError{
 			field:  "ClientId",
 			reason: "value must be a valid UUID",
 			cause:  err,
 		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
 	}
 
 	if err := m._validateUuid(m.GetTenantId()); err != nil {
-		return RenewDeviceCredentialRequestValidationError{
+		err = RenewDeviceCredentialRequestValidationError{
 			field:  "TenantId",
 			reason: "value must be a valid UUID",
 			cause:  err,
 		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
 	}
 
 	if l := utf8.RuneCountInString(m.GetCredential()); l < 1 || l > 255 {
-		return RenewDeviceCredentialRequestValidationError{
+		err := RenewDeviceCredentialRequestValidationError{
 			field:  "Credential",
 			reason: "value length must be between 1 and 255 runes, inclusive",
 		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	if len(errors) > 0 {
+		return RenewDeviceCredentialRequestMultiError(errors)
 	}
 
 	return nil
@@ -200,6 +306,23 @@ func (m *RenewDeviceCredentialRequest) _validateUuid(uuid string) error {
 
 	return nil
 }
+
+// RenewDeviceCredentialRequestMultiError is an error wrapping multiple
+// validation errors returned by RenewDeviceCredentialRequest.ValidateAll() if
+// the designated constraints aren't met.
+type RenewDeviceCredentialRequestMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m RenewDeviceCredentialRequestMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m RenewDeviceCredentialRequestMultiError) AllErrors() []error { return m }
 
 // RenewDeviceCredentialRequestValidationError is the validation error returned
 // by RenewDeviceCredentialRequest.Validate if the designated constraints
@@ -260,14 +383,49 @@ var _ interface {
 
 // Validate checks the field values on DeviceGetWhoAmIRequest with the rules
 // defined in the proto definition for this message. If any rules are
-// violated, an error is returned.
+// violated, the first error encountered is returned, or nil if there are no violations.
 func (m *DeviceGetWhoAmIRequest) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on DeviceGetWhoAmIRequest with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// DeviceGetWhoAmIRequestMultiError, or nil if none found.
+func (m *DeviceGetWhoAmIRequest) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *DeviceGetWhoAmIRequest) validate(all bool) error {
 	if m == nil {
 		return nil
 	}
 
+	var errors []error
+
+	if len(errors) > 0 {
+		return DeviceGetWhoAmIRequestMultiError(errors)
+	}
+
 	return nil
 }
+
+// DeviceGetWhoAmIRequestMultiError is an error wrapping multiple validation
+// errors returned by DeviceGetWhoAmIRequest.ValidateAll() if the designated
+// constraints aren't met.
+type DeviceGetWhoAmIRequestMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m DeviceGetWhoAmIRequestMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m DeviceGetWhoAmIRequestMultiError) AllErrors() []error { return m }
 
 // DeviceGetWhoAmIRequestValidationError is the validation error returned by
 // DeviceGetWhoAmIRequest.Validate if the designated constraints aren't met.
@@ -326,22 +484,61 @@ var _ interface {
 } = DeviceGetWhoAmIRequestValidationError{}
 
 // Validate checks the field values on DeviceRequest with the rules defined in
-// the proto definition for this message. If any rules are violated, an error
-// is returned.
+// the proto definition for this message. If any rules are violated, the first
+// error encountered is returned, or nil if there are no violations.
 func (m *DeviceRequest) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on DeviceRequest with the rules defined
+// in the proto definition for this message. If any rules are violated, the
+// result is a list of violation errors wrapped in DeviceRequestMultiError, or
+// nil if none found.
+func (m *DeviceRequest) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *DeviceRequest) validate(all bool) error {
 	if m == nil {
 		return nil
 	}
 
+	var errors []error
+
 	if l := utf8.RuneCountInString(m.GetDeviceId()); l < 1 || l > 127 {
-		return DeviceRequestValidationError{
+		err := DeviceRequestValidationError{
 			field:  "DeviceId",
 			reason: "value length must be between 1 and 127 runes, inclusive",
 		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	if len(errors) > 0 {
+		return DeviceRequestMultiError(errors)
 	}
 
 	return nil
 }
+
+// DeviceRequestMultiError is an error wrapping multiple validation errors
+// returned by DeviceRequest.ValidateAll() if the designated constraints
+// aren't met.
+type DeviceRequestMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m DeviceRequestMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m DeviceRequestMultiError) AllErrors() []error { return m }
 
 // DeviceRequestValidationError is the validation error returned by
 // DeviceRequest.Validate if the designated constraints aren't met.
@@ -398,16 +595,49 @@ var _ interface {
 } = DeviceRequestValidationError{}
 
 // Validate checks the field values on GetDevicesRequest with the rules defined
-// in the proto definition for this message. If any rules are violated, an
-// error is returned.
+// in the proto definition for this message. If any rules are violated, the
+// first error encountered is returned, or nil if there are no violations.
 func (m *GetDevicesRequest) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on GetDevicesRequest with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// GetDevicesRequestMultiError, or nil if none found.
+func (m *GetDevicesRequest) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *GetDevicesRequest) validate(all bool) error {
 	if m == nil {
 		return nil
 	}
 
+	var errors []error
+
 	// no validation rules for TenantId
 
-	if v, ok := interface{}(m.GetPagination()).(interface{ Validate() error }); ok {
+	if all {
+		switch v := interface{}(m.GetPagination()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, GetDevicesRequestValidationError{
+					field:  "Pagination",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, GetDevicesRequestValidationError{
+					field:  "Pagination",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetPagination()).(interface{ Validate() error }); ok {
 		if err := v.Validate(); err != nil {
 			return GetDevicesRequestValidationError{
 				field:  "Pagination",
@@ -418,14 +648,39 @@ func (m *GetDevicesRequest) Validate() error {
 	}
 
 	if utf8.RuneCountInString(m.GetUserId()) > 127 {
-		return GetDevicesRequestValidationError{
+		err := GetDevicesRequestValidationError{
 			field:  "UserId",
 			reason: "value length must be at most 127 runes",
 		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	if len(errors) > 0 {
+		return GetDevicesRequestMultiError(errors)
 	}
 
 	return nil
 }
+
+// GetDevicesRequestMultiError is an error wrapping multiple validation errors
+// returned by GetDevicesRequest.ValidateAll() if the designated constraints
+// aren't met.
+type GetDevicesRequestMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m GetDevicesRequestMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m GetDevicesRequestMultiError) AllErrors() []error { return m }
 
 // GetDevicesRequestValidationError is the validation error returned by
 // GetDevicesRequest.Validate if the designated constraints aren't met.
@@ -485,28 +740,71 @@ var _ interface {
 
 // Validate checks the field values on UpdateDeviceRequest with the rules
 // defined in the proto definition for this message. If any rules are
-// violated, an error is returned.
+// violated, the first error encountered is returned, or nil if there are no violations.
 func (m *UpdateDeviceRequest) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on UpdateDeviceRequest with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// UpdateDeviceRequestMultiError, or nil if none found.
+func (m *UpdateDeviceRequest) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *UpdateDeviceRequest) validate(all bool) error {
 	if m == nil {
 		return nil
 	}
 
+	var errors []error
+
 	if l := utf8.RuneCountInString(m.GetDeviceId()); l < 1 || l > 127 {
-		return UpdateDeviceRequestValidationError{
+		err := UpdateDeviceRequestValidationError{
 			field:  "DeviceId",
 			reason: "value length must be between 1 and 127 runes, inclusive",
 		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
 	}
 
 	if l := utf8.RuneCountInString(m.GetName()); l < 1 || l > 127 {
-		return UpdateDeviceRequestValidationError{
+		err := UpdateDeviceRequestValidationError{
 			field:  "Name",
 			reason: "value length must be between 1 and 127 runes, inclusive",
 		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	if len(errors) > 0 {
+		return UpdateDeviceRequestMultiError(errors)
 	}
 
 	return nil
 }
+
+// UpdateDeviceRequestMultiError is an error wrapping multiple validation
+// errors returned by UpdateDeviceRequest.ValidateAll() if the designated
+// constraints aren't met.
+type UpdateDeviceRequestMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m UpdateDeviceRequestMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m UpdateDeviceRequestMultiError) AllErrors() []error { return m }
 
 // UpdateDeviceRequestValidationError is the validation error returned by
 // UpdateDeviceRequest.Validate if the designated constraints aren't met.
@@ -565,19 +863,54 @@ var _ interface {
 } = UpdateDeviceRequestValidationError{}
 
 // Validate checks the field values on DeviceResponse with the rules defined in
-// the proto definition for this message. If any rules are violated, an error
-// is returned.
+// the proto definition for this message. If any rules are violated, the first
+// error encountered is returned, or nil if there are no violations.
 func (m *DeviceResponse) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on DeviceResponse with the rules defined
+// in the proto definition for this message. If any rules are violated, the
+// result is a list of violation errors wrapped in DeviceResponseMultiError,
+// or nil if none found.
+func (m *DeviceResponse) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *DeviceResponse) validate(all bool) error {
 	if m == nil {
 		return nil
 	}
+
+	var errors []error
 
 	// no validation rules for Name
 
 	// no validation rules for DeviceId
 
+	if len(errors) > 0 {
+		return DeviceResponseMultiError(errors)
+	}
+
 	return nil
 }
+
+// DeviceResponseMultiError is an error wrapping multiple validation errors
+// returned by DeviceResponse.ValidateAll() if the designated constraints
+// aren't met.
+type DeviceResponseMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m DeviceResponseMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m DeviceResponseMultiError) AllErrors() []error { return m }
 
 // DeviceResponseValidationError is the validation error returned by
 // DeviceResponse.Validate if the designated constraints aren't met.
@@ -634,12 +967,26 @@ var _ interface {
 } = DeviceResponseValidationError{}
 
 // Validate checks the field values on GetDeviceResponse with the rules defined
-// in the proto definition for this message. If any rules are violated, an
-// error is returned.
+// in the proto definition for this message. If any rules are violated, the
+// first error encountered is returned, or nil if there are no violations.
 func (m *GetDeviceResponse) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on GetDeviceResponse with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// GetDeviceResponseMultiError, or nil if none found.
+func (m *GetDeviceResponse) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *GetDeviceResponse) validate(all bool) error {
 	if m == nil {
 		return nil
 	}
+
+	var errors []error
 
 	// no validation rules for Name
 
@@ -647,8 +994,29 @@ func (m *GetDeviceResponse) Validate() error {
 
 	// no validation rules for UserCount
 
+	if len(errors) > 0 {
+		return GetDeviceResponseMultiError(errors)
+	}
+
 	return nil
 }
+
+// GetDeviceResponseMultiError is an error wrapping multiple validation errors
+// returned by GetDeviceResponse.ValidateAll() if the designated constraints
+// aren't met.
+type GetDeviceResponseMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m GetDeviceResponseMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m GetDeviceResponseMultiError) AllErrors() []error { return m }
 
 // GetDeviceResponseValidationError is the validation error returned by
 // GetDeviceResponse.Validate if the designated constraints aren't met.
@@ -708,16 +1076,49 @@ var _ interface {
 
 // Validate checks the field values on DeviceListResponse with the rules
 // defined in the proto definition for this message. If any rules are
-// violated, an error is returned.
+// violated, the first error encountered is returned, or nil if there are no violations.
 func (m *DeviceListResponse) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on DeviceListResponse with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// DeviceListResponseMultiError, or nil if none found.
+func (m *DeviceListResponse) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *DeviceListResponse) validate(all bool) error {
 	if m == nil {
 		return nil
 	}
 
+	var errors []error
+
 	for idx, item := range m.GetDevices() {
 		_, _ = idx, item
 
-		if v, ok := interface{}(item).(interface{ Validate() error }); ok {
+		if all {
+			switch v := interface{}(item).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, DeviceListResponseValidationError{
+						field:  fmt.Sprintf("Devices[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, DeviceListResponseValidationError{
+						field:  fmt.Sprintf("Devices[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(item).(interface{ Validate() error }); ok {
 			if err := v.Validate(); err != nil {
 				return DeviceListResponseValidationError{
 					field:  fmt.Sprintf("Devices[%v]", idx),
@@ -729,7 +1130,26 @@ func (m *DeviceListResponse) Validate() error {
 
 	}
 
-	if v, ok := interface{}(m.GetPagination()).(interface{ Validate() error }); ok {
+	if all {
+		switch v := interface{}(m.GetPagination()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, DeviceListResponseValidationError{
+					field:  "Pagination",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, DeviceListResponseValidationError{
+					field:  "Pagination",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetPagination()).(interface{ Validate() error }); ok {
 		if err := v.Validate(); err != nil {
 			return DeviceListResponseValidationError{
 				field:  "Pagination",
@@ -739,8 +1159,29 @@ func (m *DeviceListResponse) Validate() error {
 		}
 	}
 
+	if len(errors) > 0 {
+		return DeviceListResponseMultiError(errors)
+	}
+
 	return nil
 }
+
+// DeviceListResponseMultiError is an error wrapping multiple validation errors
+// returned by DeviceListResponse.ValidateAll() if the designated constraints
+// aren't met.
+type DeviceListResponseMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m DeviceListResponseMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m DeviceListResponseMultiError) AllErrors() []error { return m }
 
 // DeviceListResponseValidationError is the validation error returned by
 // DeviceListResponse.Validate if the designated constraints aren't met.
