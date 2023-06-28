@@ -7,6 +7,15 @@ import (
 	"google.golang.org/grpc/codes"
 )
 
+type IClientConfig interface {
+	Connect() (onClose func(), err error)
+	GetClient() (*grpc.ClientConn, error)
+	GetFullyQualifiedDomainName() string
+	GetIsSecure() bool
+	GetTenantId() string
+	GetDeviceId() string
+}
+
 // ClientConfig establishes the necessary parameters to establish a gRPC connection to Sensory Cloud
 type ClientConfig struct {
 	FullyQualifiedDomainName string
@@ -34,6 +43,26 @@ func (c *ClientConfig) GetClient() (*grpc.ClientConn, error) {
 	}
 
 	return c.client, nil
+}
+
+// Gets the domain name
+func (c *ClientConfig) GetFullyQualifiedDomainName() string {
+	return c.FullyQualifiedDomainName
+}
+
+// Returns whether or not the client is secure
+func (c *ClientConfig) GetIsSecure() bool {
+	return c.IsSecure
+}
+
+// Gets the tenant id
+func (c *ClientConfig) GetTenantId() string {
+	return c.TenantId
+}
+
+// Gets the device id
+func (c *ClientConfig) GetDeviceId() string {
+	return c.DeviceId
 }
 
 // Enum to specify the authentication level required for device enrollment by the Sensory Cloud Server

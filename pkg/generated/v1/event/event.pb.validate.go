@@ -11,11 +11,12 @@ import (
 	"net/mail"
 	"net/url"
 	"regexp"
+	"sort"
 	"strings"
 	"time"
 	"unicode/utf8"
 
-	"github.com/golang/protobuf/ptypes"
+	"google.golang.org/protobuf/types/known/anypb"
 
 	common "github.com/Sensory-Cloud/go-sdk/pkg/generated/common"
 )
@@ -32,15 +33,8 @@ var (
 	_ = time.Duration(0)
 	_ = (*url.URL)(nil)
 	_ = (*mail.Address)(nil)
-	_ = ptypes.DynamicAny{}
-
-	_ = common.UsageEventType(0)
-
-	_ = common.ModelType(0)
-
-	_ = common.UsageEventType(0)
-
-	_ = common.ModelType(0)
+	_ = anypb.Any{}
+	_ = sort.Sort
 
 	_ = common.ModelType(0)
 )
@@ -50,16 +44,49 @@ var _event_uuidPattern = regexp.MustCompile("^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9
 
 // Validate checks the field values on PublishUsageEventsRequest with the rules
 // defined in the proto definition for this message. If any rules are
-// violated, an error is returned.
+// violated, the first error encountered is returned, or nil if there are no violations.
 func (m *PublishUsageEventsRequest) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on PublishUsageEventsRequest with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// PublishUsageEventsRequestMultiError, or nil if none found.
+func (m *PublishUsageEventsRequest) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *PublishUsageEventsRequest) validate(all bool) error {
 	if m == nil {
 		return nil
 	}
 
+	var errors []error
+
 	for idx, item := range m.GetEvents() {
 		_, _ = idx, item
 
-		if v, ok := interface{}(item).(interface{ Validate() error }); ok {
+		if all {
+			switch v := interface{}(item).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, PublishUsageEventsRequestValidationError{
+						field:  fmt.Sprintf("Events[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, PublishUsageEventsRequestValidationError{
+						field:  fmt.Sprintf("Events[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(item).(interface{ Validate() error }); ok {
 			if err := v.Validate(); err != nil {
 				return PublishUsageEventsRequestValidationError{
 					field:  fmt.Sprintf("Events[%v]", idx),
@@ -71,8 +98,29 @@ func (m *PublishUsageEventsRequest) Validate() error {
 
 	}
 
+	if len(errors) > 0 {
+		return PublishUsageEventsRequestMultiError(errors)
+	}
+
 	return nil
 }
+
+// PublishUsageEventsRequestMultiError is an error wrapping multiple validation
+// errors returned by PublishUsageEventsRequest.ValidateAll() if the
+// designated constraints aren't met.
+type PublishUsageEventsRequestMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m PublishUsageEventsRequestMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m PublishUsageEventsRequestMultiError) AllErrors() []error { return m }
 
 // PublishUsageEventsRequestValidationError is the validation error returned by
 // PublishUsageEventsRequest.Validate if the designated constraints aren't met.
@@ -131,53 +179,92 @@ var _ interface {
 } = PublishUsageEventsRequestValidationError{}
 
 // Validate checks the field values on UsageEvent with the rules defined in the
-// proto definition for this message. If any rules are violated, an error is returned.
+// proto definition for this message. If any rules are violated, the first
+// error encountered is returned, or nil if there are no violations.
 func (m *UsageEvent) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on UsageEvent with the rules defined in
+// the proto definition for this message. If any rules are violated, the
+// result is a list of violation errors wrapped in UsageEventMultiError, or
+// nil if none found.
+func (m *UsageEvent) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *UsageEvent) validate(all bool) error {
 	if m == nil {
 		return nil
 	}
 
+	var errors []error
+
 	if m.GetTimestamp() == nil {
-		return UsageEventValidationError{
+		err := UsageEventValidationError{
 			field:  "Timestamp",
 			reason: "value is required",
 		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
 	}
 
 	if m.GetDuration() < 0 {
-		return UsageEventValidationError{
+		err := UsageEventValidationError{
 			field:  "Duration",
 			reason: "value must be greater than or equal to 0",
 		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
 	}
 
 	if err := m._validateUuid(m.GetId()); err != nil {
-		return UsageEventValidationError{
+		err = UsageEventValidationError{
 			field:  "Id",
 			reason: "value must be a valid UUID",
 			cause:  err,
 		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
 	}
 
 	if l := utf8.RuneCountInString(m.GetClientId()); l < 1 || l > 127 {
-		return UsageEventValidationError{
+		err := UsageEventValidationError{
 			field:  "ClientId",
 			reason: "value length must be between 1 and 127 runes, inclusive",
 		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
 	}
 
 	if _, ok := common.UsageEventType_name[int32(m.GetType())]; !ok {
-		return UsageEventValidationError{
+		err := UsageEventValidationError{
 			field:  "Type",
 			reason: "value must be one of the defined enum values",
 		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
 	}
 
 	if l := utf8.RuneCountInString(m.GetRoute()); l < 1 || l > 511 {
-		return UsageEventValidationError{
+		err := UsageEventValidationError{
 			field:  "Route",
 			reason: "value length must be between 1 and 511 runes, inclusive",
 		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
 	}
 
 	// no validation rules for AudioDurationMs
@@ -187,6 +274,10 @@ func (m *UsageEvent) Validate() error {
 	// no validation rules for TenantId
 
 	// no validation rules for BillableFunction
+
+	if len(errors) > 0 {
+		return UsageEventMultiError(errors)
+	}
 
 	return nil
 }
@@ -198,6 +289,22 @@ func (m *UsageEvent) _validateUuid(uuid string) error {
 
 	return nil
 }
+
+// UsageEventMultiError is an error wrapping multiple validation errors
+// returned by UsageEvent.ValidateAll() if the designated constraints aren't met.
+type UsageEventMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m UsageEventMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m UsageEventMultiError) AllErrors() []error { return m }
 
 // UsageEventValidationError is the validation error returned by
 // UsageEvent.Validate if the designated constraints aren't met.
@@ -255,53 +362,91 @@ var _ interface {
 
 // Validate checks the field values on UsageEventResponse with the rules
 // defined in the proto definition for this message. If any rules are
-// violated, an error is returned.
+// violated, the first error encountered is returned, or nil if there are no violations.
 func (m *UsageEventResponse) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on UsageEventResponse with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// UsageEventResponseMultiError, or nil if none found.
+func (m *UsageEventResponse) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *UsageEventResponse) validate(all bool) error {
 	if m == nil {
 		return nil
 	}
 
+	var errors []error
+
 	if m.GetTimestamp() == nil {
-		return UsageEventResponseValidationError{
+		err := UsageEventResponseValidationError{
 			field:  "Timestamp",
 			reason: "value is required",
 		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
 	}
 
 	if m.GetDuration() < 0 {
-		return UsageEventResponseValidationError{
+		err := UsageEventResponseValidationError{
 			field:  "Duration",
 			reason: "value must be greater than or equal to 0",
 		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
 	}
 
 	if err := m._validateUuid(m.GetId()); err != nil {
-		return UsageEventResponseValidationError{
+		err = UsageEventResponseValidationError{
 			field:  "Id",
 			reason: "value must be a valid UUID",
 			cause:  err,
 		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
 	}
 
 	if l := utf8.RuneCountInString(m.GetClientId()); l < 1 || l > 127 {
-		return UsageEventResponseValidationError{
+		err := UsageEventResponseValidationError{
 			field:  "ClientId",
 			reason: "value length must be between 1 and 127 runes, inclusive",
 		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
 	}
 
 	if _, ok := common.UsageEventType_name[int32(m.GetType())]; !ok {
-		return UsageEventResponseValidationError{
+		err := UsageEventResponseValidationError{
 			field:  "Type",
 			reason: "value must be one of the defined enum values",
 		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
 	}
 
 	if l := utf8.RuneCountInString(m.GetRoute()); l < 1 || l > 511 {
-		return UsageEventResponseValidationError{
+		err := UsageEventResponseValidationError{
 			field:  "Route",
 			reason: "value length must be between 1 and 511 runes, inclusive",
 		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
 	}
 
 	// no validation rules for BillableValue
@@ -314,6 +459,10 @@ func (m *UsageEventResponse) Validate() error {
 
 	// no validation rules for Credits
 
+	if len(errors) > 0 {
+		return UsageEventResponseMultiError(errors)
+	}
+
 	return nil
 }
 
@@ -324,6 +473,23 @@ func (m *UsageEventResponse) _validateUuid(uuid string) error {
 
 	return nil
 }
+
+// UsageEventResponseMultiError is an error wrapping multiple validation errors
+// returned by UsageEventResponse.ValidateAll() if the designated constraints
+// aren't met.
+type UsageEventResponseMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m UsageEventResponseMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m UsageEventResponseMultiError) AllErrors() []error { return m }
 
 // UsageEventResponseValidationError is the validation error returned by
 // UsageEventResponse.Validate if the designated constraints aren't met.
@@ -383,15 +549,48 @@ var _ interface {
 
 // Validate checks the field values on UsageEventListRequest with the rules
 // defined in the proto definition for this message. If any rules are
-// violated, an error is returned.
+// violated, the first error encountered is returned, or nil if there are no violations.
 func (m *UsageEventListRequest) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on UsageEventListRequest with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// UsageEventListRequestMultiError, or nil if none found.
+func (m *UsageEventListRequest) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *UsageEventListRequest) validate(all bool) error {
 	if m == nil {
 		return nil
 	}
 
+	var errors []error
+
 	// no validation rules for TenantId
 
-	if v, ok := interface{}(m.GetPagination()).(interface{ Validate() error }); ok {
+	if all {
+		switch v := interface{}(m.GetPagination()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, UsageEventListRequestValidationError{
+					field:  "Pagination",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, UsageEventListRequestValidationError{
+					field:  "Pagination",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetPagination()).(interface{ Validate() error }); ok {
 		if err := v.Validate(); err != nil {
 			return UsageEventListRequestValidationError{
 				field:  "Pagination",
@@ -401,7 +600,26 @@ func (m *UsageEventListRequest) Validate() error {
 		}
 	}
 
-	if v, ok := interface{}(m.GetAfter()).(interface{ Validate() error }); ok {
+	if all {
+		switch v := interface{}(m.GetAfter()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, UsageEventListRequestValidationError{
+					field:  "After",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, UsageEventListRequestValidationError{
+					field:  "After",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetAfter()).(interface{ Validate() error }); ok {
 		if err := v.Validate(); err != nil {
 			return UsageEventListRequestValidationError{
 				field:  "After",
@@ -411,7 +629,26 @@ func (m *UsageEventListRequest) Validate() error {
 		}
 	}
 
-	if v, ok := interface{}(m.GetBefore()).(interface{ Validate() error }); ok {
+	if all {
+		switch v := interface{}(m.GetBefore()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, UsageEventListRequestValidationError{
+					field:  "Before",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, UsageEventListRequestValidationError{
+					field:  "Before",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetBefore()).(interface{ Validate() error }); ok {
 		if err := v.Validate(); err != nil {
 			return UsageEventListRequestValidationError{
 				field:  "Before",
@@ -421,8 +658,29 @@ func (m *UsageEventListRequest) Validate() error {
 		}
 	}
 
+	if len(errors) > 0 {
+		return UsageEventListRequestMultiError(errors)
+	}
+
 	return nil
 }
+
+// UsageEventListRequestMultiError is an error wrapping multiple validation
+// errors returned by UsageEventListRequest.ValidateAll() if the designated
+// constraints aren't met.
+type UsageEventListRequestMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m UsageEventListRequestMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m UsageEventListRequestMultiError) AllErrors() []error { return m }
 
 // UsageEventListRequestValidationError is the validation error returned by
 // UsageEventListRequest.Validate if the designated constraints aren't met.
@@ -482,16 +740,49 @@ var _ interface {
 
 // Validate checks the field values on UsageEventListResponse with the rules
 // defined in the proto definition for this message. If any rules are
-// violated, an error is returned.
+// violated, the first error encountered is returned, or nil if there are no violations.
 func (m *UsageEventListResponse) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on UsageEventListResponse with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// UsageEventListResponseMultiError, or nil if none found.
+func (m *UsageEventListResponse) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *UsageEventListResponse) validate(all bool) error {
 	if m == nil {
 		return nil
 	}
 
+	var errors []error
+
 	for idx, item := range m.GetEvents() {
 		_, _ = idx, item
 
-		if v, ok := interface{}(item).(interface{ Validate() error }); ok {
+		if all {
+			switch v := interface{}(item).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, UsageEventListResponseValidationError{
+						field:  fmt.Sprintf("Events[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, UsageEventListResponseValidationError{
+						field:  fmt.Sprintf("Events[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(item).(interface{ Validate() error }); ok {
 			if err := v.Validate(); err != nil {
 				return UsageEventListResponseValidationError{
 					field:  fmt.Sprintf("Events[%v]", idx),
@@ -503,7 +794,26 @@ func (m *UsageEventListResponse) Validate() error {
 
 	}
 
-	if v, ok := interface{}(m.GetPagination()).(interface{ Validate() error }); ok {
+	if all {
+		switch v := interface{}(m.GetPagination()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, UsageEventListResponseValidationError{
+					field:  "Pagination",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, UsageEventListResponseValidationError{
+					field:  "Pagination",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetPagination()).(interface{ Validate() error }); ok {
 		if err := v.Validate(); err != nil {
 			return UsageEventListResponseValidationError{
 				field:  "Pagination",
@@ -513,8 +823,29 @@ func (m *UsageEventListResponse) Validate() error {
 		}
 	}
 
+	if len(errors) > 0 {
+		return UsageEventListResponseMultiError(errors)
+	}
+
 	return nil
 }
+
+// UsageEventListResponseMultiError is an error wrapping multiple validation
+// errors returned by UsageEventListResponse.ValidateAll() if the designated
+// constraints aren't met.
+type UsageEventListResponseMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m UsageEventListResponseMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m UsageEventListResponseMultiError) AllErrors() []error { return m }
 
 // UsageEventListResponseValidationError is the validation error returned by
 // UsageEventListResponse.Validate if the designated constraints aren't met.
@@ -572,18 +903,211 @@ var _ interface {
 	ErrorName() string
 } = UsageEventListResponseValidationError{}
 
-// Validate checks the field values on UsageEventSummary with the rules defined
-// in the proto definition for this message. If any rules are violated, an
-// error is returned.
-func (m *UsageEventSummary) Validate() error {
+// Validate checks the field values on GlobalEventSummaryRequest with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *GlobalEventSummaryRequest) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on GlobalEventSummaryRequest with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// GlobalEventSummaryRequestMultiError, or nil if none found.
+func (m *GlobalEventSummaryRequest) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *GlobalEventSummaryRequest) validate(all bool) error {
 	if m == nil {
 		return nil
 	}
 
+	var errors []error
+
+	if all {
+		switch v := interface{}(m.GetAfter()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, GlobalEventSummaryRequestValidationError{
+					field:  "After",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, GlobalEventSummaryRequestValidationError{
+					field:  "After",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetAfter()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return GlobalEventSummaryRequestValidationError{
+				field:  "After",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
+	if all {
+		switch v := interface{}(m.GetBefore()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, GlobalEventSummaryRequestValidationError{
+					field:  "Before",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, GlobalEventSummaryRequestValidationError{
+					field:  "Before",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetBefore()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return GlobalEventSummaryRequestValidationError{
+				field:  "Before",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
+	if len(errors) > 0 {
+		return GlobalEventSummaryRequestMultiError(errors)
+	}
+
+	return nil
+}
+
+// GlobalEventSummaryRequestMultiError is an error wrapping multiple validation
+// errors returned by GlobalEventSummaryRequest.ValidateAll() if the
+// designated constraints aren't met.
+type GlobalEventSummaryRequestMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m GlobalEventSummaryRequestMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m GlobalEventSummaryRequestMultiError) AllErrors() []error { return m }
+
+// GlobalEventSummaryRequestValidationError is the validation error returned by
+// GlobalEventSummaryRequest.Validate if the designated constraints aren't met.
+type GlobalEventSummaryRequestValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e GlobalEventSummaryRequestValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e GlobalEventSummaryRequestValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e GlobalEventSummaryRequestValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e GlobalEventSummaryRequestValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e GlobalEventSummaryRequestValidationError) ErrorName() string {
+	return "GlobalEventSummaryRequestValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e GlobalEventSummaryRequestValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sGlobalEventSummaryRequest.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = GlobalEventSummaryRequestValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = GlobalEventSummaryRequestValidationError{}
+
+// Validate checks the field values on UsageEventSummary with the rules defined
+// in the proto definition for this message. If any rules are violated, the
+// first error encountered is returned, or nil if there are no violations.
+func (m *UsageEventSummary) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on UsageEventSummary with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// UsageEventSummaryMultiError, or nil if none found.
+func (m *UsageEventSummary) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *UsageEventSummary) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
 	for idx, item := range m.GetSummaries() {
 		_, _ = idx, item
 
-		if v, ok := interface{}(item).(interface{ Validate() error }); ok {
+		if all {
+			switch v := interface{}(item).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, UsageEventSummaryValidationError{
+						field:  fmt.Sprintf("Summaries[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, UsageEventSummaryValidationError{
+						field:  fmt.Sprintf("Summaries[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(item).(interface{ Validate() error }); ok {
 			if err := v.Validate(); err != nil {
 				return UsageEventSummaryValidationError{
 					field:  fmt.Sprintf("Summaries[%v]", idx),
@@ -595,8 +1119,29 @@ func (m *UsageEventSummary) Validate() error {
 
 	}
 
+	if len(errors) > 0 {
+		return UsageEventSummaryMultiError(errors)
+	}
+
 	return nil
 }
+
+// UsageEventSummaryMultiError is an error wrapping multiple validation errors
+// returned by UsageEventSummary.ValidateAll() if the designated constraints
+// aren't met.
+type UsageEventSummaryMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m UsageEventSummaryMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m UsageEventSummaryMultiError) AllErrors() []error { return m }
 
 // UsageEventSummaryValidationError is the validation error returned by
 // UsageEventSummary.Validate if the designated constraints aren't met.
@@ -656,11 +1201,25 @@ var _ interface {
 
 // Validate checks the field values on UsageEventModelSummary with the rules
 // defined in the proto definition for this message. If any rules are
-// violated, an error is returned.
+// violated, the first error encountered is returned, or nil if there are no violations.
 func (m *UsageEventModelSummary) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on UsageEventModelSummary with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// UsageEventModelSummaryMultiError, or nil if none found.
+func (m *UsageEventModelSummary) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *UsageEventModelSummary) validate(all bool) error {
 	if m == nil {
 		return nil
 	}
+
+	var errors []error
 
 	// no validation rules for BillableFunction
 
@@ -672,8 +1231,31 @@ func (m *UsageEventModelSummary) Validate() error {
 
 	// no validation rules for Credits
 
+	// no validation rules for TenantId
+
+	if len(errors) > 0 {
+		return UsageEventModelSummaryMultiError(errors)
+	}
+
 	return nil
 }
+
+// UsageEventModelSummaryMultiError is an error wrapping multiple validation
+// errors returned by UsageEventModelSummary.ValidateAll() if the designated
+// constraints aren't met.
+type UsageEventModelSummaryMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m UsageEventModelSummaryMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m UsageEventModelSummaryMultiError) AllErrors() []error { return m }
 
 // UsageEventModelSummaryValidationError is the validation error returned by
 // UsageEventModelSummary.Validate if the designated constraints aren't met.
@@ -733,14 +1315,49 @@ var _ interface {
 
 // Validate checks the field values on PublishUsageEventsResponse with the
 // rules defined in the proto definition for this message. If any rules are
-// violated, an error is returned.
+// violated, the first error encountered is returned, or nil if there are no violations.
 func (m *PublishUsageEventsResponse) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on PublishUsageEventsResponse with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// PublishUsageEventsResponseMultiError, or nil if none found.
+func (m *PublishUsageEventsResponse) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *PublishUsageEventsResponse) validate(all bool) error {
 	if m == nil {
 		return nil
 	}
 
+	var errors []error
+
+	if len(errors) > 0 {
+		return PublishUsageEventsResponseMultiError(errors)
+	}
+
 	return nil
 }
+
+// PublishUsageEventsResponseMultiError is an error wrapping multiple
+// validation errors returned by PublishUsageEventsResponse.ValidateAll() if
+// the designated constraints aren't met.
+type PublishUsageEventsResponseMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m PublishUsageEventsResponseMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m PublishUsageEventsResponseMultiError) AllErrors() []error { return m }
 
 // PublishUsageEventsResponseValidationError is the validation error returned
 // by PublishUsageEventsResponse.Validate if the designated constraints aren't met.

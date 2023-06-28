@@ -9,7 +9,7 @@ import (
 )
 
 type AudioService struct {
-	config                    *config.ClientConfig
+	config                    config.IClientConfig
 	tokenManager              token_manager.IAuthorizationMetadataService
 	audioBiometricsClient     audio_api_v1.AudioBiometricsClient
 	audioEventsClient         audio_api_v1.AudioEventsClient
@@ -19,7 +19,7 @@ type AudioService struct {
 }
 
 // NewAudioService creates a service to handle audio requests to Sensory Cloud
-func NewAudioService(config *config.ClientConfig, tokenManager token_manager.IAuthorizationMetadataService) (*AudioService, error) {
+func NewAudioService(config config.IClientConfig, tokenManager token_manager.IAuthorizationMetadataService) (*AudioService, error) {
 	client, err := config.GetClient()
 	if err != nil {
 		return nil, err
@@ -33,7 +33,7 @@ func NewAudioService(config *config.ClientConfig, tokenManager token_manager.IAu
 	return &AudioService{config, tokenManager, audioBiometricsClient, audioEventsClient, audioModelsClient, audioTranscriptionsClient, audioSynthesisClient}, nil
 }
 
-//  Fetch all the audio models supported by your instance of Sensory Cloud.
+// Fetch all the audio models supported by your instance of Sensory Cloud.
 func (s *AudioService) GetModels(ctx context.Context) (*audio_api_v1.GetModelsResponse, error) {
 	ctx, err := s.tokenManager.SetAuthorizationMetadata(ctx)
 	if err != nil {
@@ -208,4 +208,39 @@ func (s *AudioService) SynthesizeSpeech(ctx context.Context, request *audio_api_
 	}
 
 	return s.audioSynthesisClient.SynthesizeSpeech(ctx, request)
+}
+
+// Set client config
+func (s *AudioService) SetConfig(config config.IClientConfig) {
+	s.config = config
+}
+
+// Set token manager
+func (s *AudioService) SetTokenManager(tokenManager token_manager.IAuthorizationMetadataService) {
+	s.tokenManager = tokenManager
+}
+
+// Set audio biometrics client
+func (s *AudioService) SetAudioBiometricsClient(client audio_api_v1.AudioBiometricsClient) {
+	s.audioBiometricsClient = client
+}
+
+// Set audio events client
+func (s *AudioService) SetAudioEventsClient(client audio_api_v1.AudioEventsClient) {
+	s.audioEventsClient = client
+}
+
+// Set audio models client
+func (s *AudioService) SetAudioModelsClient(client audio_api_v1.AudioModelsClient) {
+	s.audioModelsClient = client
+}
+
+// Set audio transcriptions client
+func (s *AudioService) SetAudioTranscriptionsClient(client audio_api_v1.AudioTranscriptionsClient) {
+	s.audioTranscriptionsClient = client
+}
+
+// Set audio synthesis client
+func (s *AudioService) SetAudioSynthesisClient(client audio_api_v1.AudioSynthesisClient) {
+	s.audioSynthesisClient = client
 }

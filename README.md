@@ -395,39 +395,105 @@ the ValidateEnrolledEvent function.
 Transcription is used to convert audio into text.
 
 ```go
-audioSerice, err := audio_service.NewAudioService(config, tokenManager)
-userId := "user1@test.com"
-modelName := "wakeword-16kHz-open_sesame.ubm"
-
-audioConfig := &audio_api_v1.TranscribeConfig{
-    Audio: &audio_api_v1.AudioConfig{
-        Encoding:          audio_api_v1.AudioConfig_LINEAR16,
-        AudioChannelCount: 1,
-        SampleRateHertz:   16000,
-        LanguageCode:      "en-US",
-    },
-    UserId:    userId,
-    ModelName: modelName,
+sdkConfig := config.SDKInitConfig{
+    FullyQualifiedDomainName: "domain-name",
+    IsSecure:                 true,
+    TenantID:                 "tenant-id",
+    EnrollmentType:           config.SharedSecret,
+    Credential:               "shared-secret",
+    DeviceID:                 "device-id",
+    DeviceName:               "device-name",
 }
 
-aggregator := audio_service.FullTranscriptAggregator{}
+credentialStore := NewMockSecureTokenStore()
+credentialStore.SaveCredentials("client-id", "client-secret")
 
-// Create context for the grpc request
+init := initializer.NewInitializer(credentialStore, nil)
 ctx := context.Background()
-// Optionally, set a timeout on the context
 ctx, cancel := context.WithTimeout(ctx, time.Minute)
 defer cancel()
+clientConfig, _, err := init.Initialize(ctx, sdkConfig)
+if err != nil {
+    panic(err)
+}
 
-stream, err := audioSerice.StreamTranscription(ctx, audioConfig)
-defer stream.CloseSend()
-test_util.AssertOk(t, err)
+onClose, err := clientConfig.Connect()
+if err != nil {
+    panic(err)
+}
+defer onClose()
+
+oauthService, err := oauth_service.NewOauthService(clientConfig, credentialStore)
+if err != nil {
+    panic(err)
+}
+
+tokenManager := token_manager.NewTokenManager(oauthService)
+
+audioService, err := audio_service.NewAudioService(clientConfig, tokenManager)
+if err != nil {
+    panic(err)
+}
+
+audioConfig := &audio_api_v1.AudioConfig{
+    Encoding:          audio_api_v1.AudioConfig_LINEAR16,
+    SampleRateHertz:   16000,
+    AudioChannelCount: 1,
+    LanguageCode:      "en-US",
+}
+
+transcribeConfig := &audio_api_v1.TranscribeConfig{
+    Audio:                           audioConfig,
+    ModelName:                       "speech_recognition_en",
+    UserId:                          "user-id",
+    EnablePunctuationCapitalization: false,
+    DoSingleUtterance:               false,
+    VadSensitivity:                  audio_api_v1.ThresholdSensitivity_LOW,
+    VadDuration:                     0.0,
+    CustomVocabRewardThreshold:      audio_api_v1.ThresholdSensitivity_LOW,
+    CustomVocabularyId:              "",
+    CustomWordList:                  nil,
+}
+
+stream, err := audioService.StreamTranscription(ctx, transcribeConfig)
+if err != nil {
+    panic(err)
+}
 
 // Create channels to handle communication between goroutines
 errorChan := make(chan error)
 responseChan := make(chan *audio_api_v1.TranscribeResponse, 10)
+requestChan := make(chan *audio_api_v1.TranscribeRequest, 3)
 
-// Channel to pass audio into (microphone or otherwise)
-audioChan := make(chan []byte, 3)
+// Read in the audio file
+audioBytes, err := ioutil.ReadFile("/path/to/audio-file.wav")
+if err != nil {
+    panic(err)
+}
+
+// Populate the request channel
+chunkSize := 8000
+numBytes := len(audioBytes)
+postProcessing := audio_api_v1.AudioPostProcessingAction_NOT_SET
+go func() {
+    for idx := 0; idx < numBytes; idx += chunkSize {
+        end := idx + chunkSize
+
+        if end > numBytes {
+            end = numBytes
+            postProcessing = audio_api_v1.AudioPostProcessingAction_FINAL
+        }
+
+        requestChan <- &audio_api_v1.TranscribeRequest{
+            StreamingRequest: &audio_api_v1.TranscribeRequest_AudioContent{
+                AudioContent: audioBytes[idx:end],
+            },
+            PostProcessingAction: &audio_api_v1.AudioRequestPostProcessingAction{
+                Action: postProcessing,
+            },
+        }
+    }
+}()
 
 // Listen for responses on the gRPC pipe on a separate goroutine
 go func() {
@@ -435,45 +501,50 @@ go func() {
         response, err := stream.Recv()
         if err != nil {
             errorChan <- err
-            return
+            break
         }
 
         responseChan <- response
     }
 }()
 
+aggregator := audio_service.FullTranscriptAggregator{}
+exitLoop := false
 for {
     select {
     // Watch for errors
     case err := <-errorChan:
-        panic(err)
+        fmt.Println(err)
+        if err == io.EOF {
+            exitLoop = true
+            break
+        }
 
     // Or timeout after 1 minute
     case <-time.NewTimer(time.Minute).C:
-        panic("read timeout!")
+        fmt.Println(err)
+        exitLoop = true
+        break
 
     // Read responses on the main goroutine
-    case result := <-responseChan:
-        fmt.Printf("Response from server: %v", result)
+    case response := <-responseChan:
+        // Process response and pring curren transcript
+        aggregator.ProcessResponse(response.WordList)
+        fmt.Println(aggregator.GetCurrentTranscript(" "))
 
-        // Process the response using the aggregator
-        aggregator.ProcessResponse(response.GetWordList())
-
-    // Send audio bytes up the pipe
-    case audio := <-audioChan:
-        err := stream.Send(&audio_api_v1.TranscribeRequest{
-            StreamingRequest: &audio_api_v1.TranscribeRequest_AudioContent{
-                AudioContent: audio,
-            },
-        })
+    // Send transcribe requests to server
+    case request := <-requestChan:
+        err := stream.Send(request)
         if err != nil {
-            panic(err)
+            fmt.Println(err)
+            break
         }
     }
-}
 
-// aggregator.GetCurrentTranscript() is the entire transcript as a string
-// aggregator.GetCurrentWordList() is every word stored in a slice with metadata such as start, end, and confidence of each word
+    if exitLoop {
+        break
+    }
+}
 ```
 
 ## Creating a VideoService

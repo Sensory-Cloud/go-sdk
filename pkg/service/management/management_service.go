@@ -9,13 +9,13 @@ import (
 )
 
 type ManagementService struct {
-	config           *config.ClientConfig
+	config           config.IClientConfig
 	tokenManager     token_manager.IAuthorizationMetadataService
 	enrollmentClient management_api_v1.EnrollmentServiceClient
 }
 
 // NewManagementService creates a service to handle audio requests to Sensory Cloud
-func NewManagementService(config *config.ClientConfig, tokenManager token_manager.IAuthorizationMetadataService) (*ManagementService, error) {
+func NewManagementService(config config.IClientConfig, tokenManager token_manager.IAuthorizationMetadataService) (*ManagementService, error) {
 	client, err := config.GetClient()
 	if err != nil {
 		return nil, err
@@ -87,4 +87,19 @@ func (s *ManagementService) DeleteEnrollmentGroup(ctx context.Context, id string
 	}
 
 	return s.enrollmentClient.DeleteEnrollmentGroup(ctx, &management_api_v1.DeleteEnrollmentGroupRequest{Id: id})
+}
+
+// Set client config
+func (s *ManagementService) SetConfig(config config.IClientConfig) {
+	s.config = config
+}
+
+// Set token manager
+func (s *ManagementService) SetTokenManager(tokenManager token_manager.IAuthorizationMetadataService) {
+	s.tokenManager = tokenManager
+}
+
+// Set enrollment client
+func (s *ManagementService) SetEnrollmentClient(client management_api_v1.EnrollmentServiceClient) {
+	s.enrollmentClient = client
 }
