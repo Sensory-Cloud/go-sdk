@@ -11,12 +11,11 @@ import (
 	"net/mail"
 	"net/url"
 	"regexp"
-	"sort"
 	"strings"
 	"time"
 	"unicode/utf8"
 
-	"google.golang.org/protobuf/types/known/anypb"
+	"github.com/golang/protobuf/ptypes"
 
 	common "github.com/Sensory-Cloud/go-sdk/pkg/generated/common"
 )
@@ -33,8 +32,9 @@ var (
 	_ = time.Duration(0)
 	_ = (*url.URL)(nil)
 	_ = (*mail.Address)(nil)
-	_ = anypb.Any{}
-	_ = sort.Sort
+	_ = ptypes.DynamicAny{}
+
+	_ = common.ModelType(0)
 
 	_ = common.TechnologyType(0)
 )
@@ -43,26 +43,11 @@ var (
 var _video_uuidPattern = regexp.MustCompile("^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$")
 
 // Validate checks the field values on VideoModel with the rules defined in the
-// proto definition for this message. If any rules are violated, the first
-// error encountered is returned, or nil if there are no violations.
+// proto definition for this message. If any rules are violated, an error is returned.
 func (m *VideoModel) Validate() error {
-	return m.validate(false)
-}
-
-// ValidateAll checks the field values on VideoModel with the rules defined in
-// the proto definition for this message. If any rules are violated, the
-// result is a list of violation errors wrapped in VideoModelMultiError, or
-// nil if none found.
-func (m *VideoModel) ValidateAll() error {
-	return m.validate(true)
-}
-
-func (m *VideoModel) validate(all bool) error {
 	if m == nil {
 		return nil
 	}
-
-	var errors []error
 
 	// no validation rules for Name
 
@@ -76,28 +61,8 @@ func (m *VideoModel) validate(all bool) error {
 
 	// no validation rules for IsLivenessSupported
 
-	if len(errors) > 0 {
-		return VideoModelMultiError(errors)
-	}
-
 	return nil
 }
-
-// VideoModelMultiError is an error wrapping multiple validation errors
-// returned by VideoModel.ValidateAll() if the designated constraints aren't met.
-type VideoModelMultiError []error
-
-// Error returns a concatenation of all the error messages it wraps.
-func (m VideoModelMultiError) Error() string {
-	var msgs []string
-	for _, err := range m {
-		msgs = append(msgs, err.Error())
-	}
-	return strings.Join(msgs, "; ")
-}
-
-// AllErrors returns a list of validation violation errors.
-func (m VideoModelMultiError) AllErrors() []error { return m }
 
 // VideoModelValidationError is the validation error returned by
 // VideoModel.Validate if the designated constraints aren't met.
@@ -154,50 +119,15 @@ var _ interface {
 } = VideoModelValidationError{}
 
 // Validate checks the field values on GetModelsRequest with the rules defined
-// in the proto definition for this message. If any rules are violated, the
-// first error encountered is returned, or nil if there are no violations.
+// in the proto definition for this message. If any rules are violated, an
+// error is returned.
 func (m *GetModelsRequest) Validate() error {
-	return m.validate(false)
-}
-
-// ValidateAll checks the field values on GetModelsRequest with the rules
-// defined in the proto definition for this message. If any rules are
-// violated, the result is a list of violation errors wrapped in
-// GetModelsRequestMultiError, or nil if none found.
-func (m *GetModelsRequest) ValidateAll() error {
-	return m.validate(true)
-}
-
-func (m *GetModelsRequest) validate(all bool) error {
 	if m == nil {
 		return nil
 	}
 
-	var errors []error
-
-	if len(errors) > 0 {
-		return GetModelsRequestMultiError(errors)
-	}
-
 	return nil
 }
-
-// GetModelsRequestMultiError is an error wrapping multiple validation errors
-// returned by GetModelsRequest.ValidateAll() if the designated constraints
-// aren't met.
-type GetModelsRequestMultiError []error
-
-// Error returns a concatenation of all the error messages it wraps.
-func (m GetModelsRequestMultiError) Error() string {
-	var msgs []string
-	for _, err := range m {
-		msgs = append(msgs, err.Error())
-	}
-	return strings.Join(msgs, "; ")
-}
-
-// AllErrors returns a list of validation violation errors.
-func (m GetModelsRequestMultiError) AllErrors() []error { return m }
 
 // GetModelsRequestValidationError is the validation error returned by
 // GetModelsRequest.Validate if the designated constraints aren't met.
@@ -254,50 +184,17 @@ var _ interface {
 } = GetModelsRequestValidationError{}
 
 // Validate checks the field values on GetModelsResponse with the rules defined
-// in the proto definition for this message. If any rules are violated, the
-// first error encountered is returned, or nil if there are no violations.
+// in the proto definition for this message. If any rules are violated, an
+// error is returned.
 func (m *GetModelsResponse) Validate() error {
-	return m.validate(false)
-}
-
-// ValidateAll checks the field values on GetModelsResponse with the rules
-// defined in the proto definition for this message. If any rules are
-// violated, the result is a list of violation errors wrapped in
-// GetModelsResponseMultiError, or nil if none found.
-func (m *GetModelsResponse) ValidateAll() error {
-	return m.validate(true)
-}
-
-func (m *GetModelsResponse) validate(all bool) error {
 	if m == nil {
 		return nil
 	}
 
-	var errors []error
-
 	for idx, item := range m.GetModels() {
 		_, _ = idx, item
 
-		if all {
-			switch v := interface{}(item).(type) {
-			case interface{ ValidateAll() error }:
-				if err := v.ValidateAll(); err != nil {
-					errors = append(errors, GetModelsResponseValidationError{
-						field:  fmt.Sprintf("Models[%v]", idx),
-						reason: "embedded message failed validation",
-						cause:  err,
-					})
-				}
-			case interface{ Validate() error }:
-				if err := v.Validate(); err != nil {
-					errors = append(errors, GetModelsResponseValidationError{
-						field:  fmt.Sprintf("Models[%v]", idx),
-						reason: "embedded message failed validation",
-						cause:  err,
-					})
-				}
-			}
-		} else if v, ok := interface{}(item).(interface{ Validate() error }); ok {
+		if v, ok := interface{}(item).(interface{ Validate() error }); ok {
 			if err := v.Validate(); err != nil {
 				return GetModelsResponseValidationError{
 					field:  fmt.Sprintf("Models[%v]", idx),
@@ -309,29 +206,8 @@ func (m *GetModelsResponse) validate(all bool) error {
 
 	}
 
-	if len(errors) > 0 {
-		return GetModelsResponseMultiError(errors)
-	}
-
 	return nil
 }
-
-// GetModelsResponseMultiError is an error wrapping multiple validation errors
-// returned by GetModelsResponse.ValidateAll() if the designated constraints
-// aren't met.
-type GetModelsResponseMultiError []error
-
-// Error returns a concatenation of all the error messages it wraps.
-func (m GetModelsResponseMultiError) Error() string {
-	var msgs []string
-	for _, err := range m {
-		msgs = append(msgs, err.Error())
-	}
-	return strings.Join(msgs, "; ")
-}
-
-// AllErrors returns a list of validation violation errors.
-func (m GetModelsResponseMultiError) AllErrors() []error { return m }
 
 // GetModelsResponseValidationError is the validation error returned by
 // GetModelsResponse.Validate if the designated constraints aren't met.
@@ -391,61 +267,17 @@ var _ interface {
 
 // Validate checks the field values on CreateEnrollmentRequest with the rules
 // defined in the proto definition for this message. If any rules are
-// violated, the first error encountered is returned, or nil if there are no violations.
+// violated, an error is returned.
 func (m *CreateEnrollmentRequest) Validate() error {
-	return m.validate(false)
-}
-
-// ValidateAll checks the field values on CreateEnrollmentRequest with the
-// rules defined in the proto definition for this message. If any rules are
-// violated, the result is a list of violation errors wrapped in
-// CreateEnrollmentRequestMultiError, or nil if none found.
-func (m *CreateEnrollmentRequest) ValidateAll() error {
-	return m.validate(true)
-}
-
-func (m *CreateEnrollmentRequest) validate(all bool) error {
 	if m == nil {
 		return nil
 	}
 
-	var errors []error
+	switch m.StreamingRequest.(type) {
 
-	oneofStreamingRequestPresent := false
-	switch v := m.StreamingRequest.(type) {
 	case *CreateEnrollmentRequest_Config:
-		if v == nil {
-			err := CreateEnrollmentRequestValidationError{
-				field:  "StreamingRequest",
-				reason: "oneof value cannot be a typed-nil",
-			}
-			if !all {
-				return err
-			}
-			errors = append(errors, err)
-		}
-		oneofStreamingRequestPresent = true
 
-		if all {
-			switch v := interface{}(m.GetConfig()).(type) {
-			case interface{ ValidateAll() error }:
-				if err := v.ValidateAll(); err != nil {
-					errors = append(errors, CreateEnrollmentRequestValidationError{
-						field:  "Config",
-						reason: "embedded message failed validation",
-						cause:  err,
-					})
-				}
-			case interface{ Validate() error }:
-				if err := v.Validate(); err != nil {
-					errors = append(errors, CreateEnrollmentRequestValidationError{
-						field:  "Config",
-						reason: "embedded message failed validation",
-						cause:  err,
-					})
-				}
-			}
-		} else if v, ok := interface{}(m.GetConfig()).(interface{ Validate() error }); ok {
+		if v, ok := interface{}(m.GetConfig()).(interface{ Validate() error }); ok {
 			if err := v.Validate(); err != nil {
 				return CreateEnrollmentRequestValidationError{
 					field:  "Config",
@@ -456,55 +288,18 @@ func (m *CreateEnrollmentRequest) validate(all bool) error {
 		}
 
 	case *CreateEnrollmentRequest_ImageContent:
-		if v == nil {
-			err := CreateEnrollmentRequestValidationError{
-				field:  "StreamingRequest",
-				reason: "oneof value cannot be a typed-nil",
-			}
-			if !all {
-				return err
-			}
-			errors = append(errors, err)
-		}
-		oneofStreamingRequestPresent = true
 		// no validation rules for ImageContent
+
 	default:
-		_ = v // ensures v is used
-	}
-	if !oneofStreamingRequestPresent {
-		err := CreateEnrollmentRequestValidationError{
+		return CreateEnrollmentRequestValidationError{
 			field:  "StreamingRequest",
 			reason: "value is required",
 		}
-		if !all {
-			return err
-		}
-		errors = append(errors, err)
-	}
 
-	if len(errors) > 0 {
-		return CreateEnrollmentRequestMultiError(errors)
 	}
 
 	return nil
 }
-
-// CreateEnrollmentRequestMultiError is an error wrapping multiple validation
-// errors returned by CreateEnrollmentRequest.ValidateAll() if the designated
-// constraints aren't met.
-type CreateEnrollmentRequestMultiError []error
-
-// Error returns a concatenation of all the error messages it wraps.
-func (m CreateEnrollmentRequestMultiError) Error() string {
-	var msgs []string
-	for _, err := range m {
-		msgs = append(msgs, err.Error())
-	}
-	return strings.Join(msgs, "; ")
-}
-
-// AllErrors returns a list of validation violation errors.
-func (m CreateEnrollmentRequestMultiError) AllErrors() []error { return m }
 
 // CreateEnrollmentRequestValidationError is the validation error returned by
 // CreateEnrollmentRequest.Validate if the designated constraints aren't met.
@@ -564,61 +359,17 @@ var _ interface {
 
 // Validate checks the field values on AuthenticateRequest with the rules
 // defined in the proto definition for this message. If any rules are
-// violated, the first error encountered is returned, or nil if there are no violations.
+// violated, an error is returned.
 func (m *AuthenticateRequest) Validate() error {
-	return m.validate(false)
-}
-
-// ValidateAll checks the field values on AuthenticateRequest with the rules
-// defined in the proto definition for this message. If any rules are
-// violated, the result is a list of violation errors wrapped in
-// AuthenticateRequestMultiError, or nil if none found.
-func (m *AuthenticateRequest) ValidateAll() error {
-	return m.validate(true)
-}
-
-func (m *AuthenticateRequest) validate(all bool) error {
 	if m == nil {
 		return nil
 	}
 
-	var errors []error
+	switch m.StreamingRequest.(type) {
 
-	oneofStreamingRequestPresent := false
-	switch v := m.StreamingRequest.(type) {
 	case *AuthenticateRequest_Config:
-		if v == nil {
-			err := AuthenticateRequestValidationError{
-				field:  "StreamingRequest",
-				reason: "oneof value cannot be a typed-nil",
-			}
-			if !all {
-				return err
-			}
-			errors = append(errors, err)
-		}
-		oneofStreamingRequestPresent = true
 
-		if all {
-			switch v := interface{}(m.GetConfig()).(type) {
-			case interface{ ValidateAll() error }:
-				if err := v.ValidateAll(); err != nil {
-					errors = append(errors, AuthenticateRequestValidationError{
-						field:  "Config",
-						reason: "embedded message failed validation",
-						cause:  err,
-					})
-				}
-			case interface{ Validate() error }:
-				if err := v.Validate(); err != nil {
-					errors = append(errors, AuthenticateRequestValidationError{
-						field:  "Config",
-						reason: "embedded message failed validation",
-						cause:  err,
-					})
-				}
-			}
-		} else if v, ok := interface{}(m.GetConfig()).(interface{ Validate() error }); ok {
+		if v, ok := interface{}(m.GetConfig()).(interface{ Validate() error }); ok {
 			if err := v.Validate(); err != nil {
 				return AuthenticateRequestValidationError{
 					field:  "Config",
@@ -629,55 +380,18 @@ func (m *AuthenticateRequest) validate(all bool) error {
 		}
 
 	case *AuthenticateRequest_ImageContent:
-		if v == nil {
-			err := AuthenticateRequestValidationError{
-				field:  "StreamingRequest",
-				reason: "oneof value cannot be a typed-nil",
-			}
-			if !all {
-				return err
-			}
-			errors = append(errors, err)
-		}
-		oneofStreamingRequestPresent = true
 		// no validation rules for ImageContent
+
 	default:
-		_ = v // ensures v is used
-	}
-	if !oneofStreamingRequestPresent {
-		err := AuthenticateRequestValidationError{
+		return AuthenticateRequestValidationError{
 			field:  "StreamingRequest",
 			reason: "value is required",
 		}
-		if !all {
-			return err
-		}
-		errors = append(errors, err)
-	}
 
-	if len(errors) > 0 {
-		return AuthenticateRequestMultiError(errors)
 	}
 
 	return nil
 }
-
-// AuthenticateRequestMultiError is an error wrapping multiple validation
-// errors returned by AuthenticateRequest.ValidateAll() if the designated
-// constraints aren't met.
-type AuthenticateRequestMultiError []error
-
-// Error returns a concatenation of all the error messages it wraps.
-func (m AuthenticateRequestMultiError) Error() string {
-	var msgs []string
-	for _, err := range m {
-		msgs = append(msgs, err.Error())
-	}
-	return strings.Join(msgs, "; ")
-}
-
-// AllErrors returns a list of validation violation errors.
-func (m AuthenticateRequestMultiError) AllErrors() []error { return m }
 
 // AuthenticateRequestValidationError is the validation error returned by
 // AuthenticateRequest.Validate if the designated constraints aren't met.
@@ -737,61 +451,17 @@ var _ interface {
 
 // Validate checks the field values on ValidateRecognitionRequest with the
 // rules defined in the proto definition for this message. If any rules are
-// violated, the first error encountered is returned, or nil if there are no violations.
+// violated, an error is returned.
 func (m *ValidateRecognitionRequest) Validate() error {
-	return m.validate(false)
-}
-
-// ValidateAll checks the field values on ValidateRecognitionRequest with the
-// rules defined in the proto definition for this message. If any rules are
-// violated, the result is a list of violation errors wrapped in
-// ValidateRecognitionRequestMultiError, or nil if none found.
-func (m *ValidateRecognitionRequest) ValidateAll() error {
-	return m.validate(true)
-}
-
-func (m *ValidateRecognitionRequest) validate(all bool) error {
 	if m == nil {
 		return nil
 	}
 
-	var errors []error
+	switch m.StreamingRequest.(type) {
 
-	oneofStreamingRequestPresent := false
-	switch v := m.StreamingRequest.(type) {
 	case *ValidateRecognitionRequest_Config:
-		if v == nil {
-			err := ValidateRecognitionRequestValidationError{
-				field:  "StreamingRequest",
-				reason: "oneof value cannot be a typed-nil",
-			}
-			if !all {
-				return err
-			}
-			errors = append(errors, err)
-		}
-		oneofStreamingRequestPresent = true
 
-		if all {
-			switch v := interface{}(m.GetConfig()).(type) {
-			case interface{ ValidateAll() error }:
-				if err := v.ValidateAll(); err != nil {
-					errors = append(errors, ValidateRecognitionRequestValidationError{
-						field:  "Config",
-						reason: "embedded message failed validation",
-						cause:  err,
-					})
-				}
-			case interface{ Validate() error }:
-				if err := v.Validate(); err != nil {
-					errors = append(errors, ValidateRecognitionRequestValidationError{
-						field:  "Config",
-						reason: "embedded message failed validation",
-						cause:  err,
-					})
-				}
-			}
-		} else if v, ok := interface{}(m.GetConfig()).(interface{ Validate() error }); ok {
+		if v, ok := interface{}(m.GetConfig()).(interface{ Validate() error }); ok {
 			if err := v.Validate(); err != nil {
 				return ValidateRecognitionRequestValidationError{
 					field:  "Config",
@@ -802,55 +472,18 @@ func (m *ValidateRecognitionRequest) validate(all bool) error {
 		}
 
 	case *ValidateRecognitionRequest_ImageContent:
-		if v == nil {
-			err := ValidateRecognitionRequestValidationError{
-				field:  "StreamingRequest",
-				reason: "oneof value cannot be a typed-nil",
-			}
-			if !all {
-				return err
-			}
-			errors = append(errors, err)
-		}
-		oneofStreamingRequestPresent = true
 		// no validation rules for ImageContent
+
 	default:
-		_ = v // ensures v is used
-	}
-	if !oneofStreamingRequestPresent {
-		err := ValidateRecognitionRequestValidationError{
+		return ValidateRecognitionRequestValidationError{
 			field:  "StreamingRequest",
 			reason: "value is required",
 		}
-		if !all {
-			return err
-		}
-		errors = append(errors, err)
-	}
 
-	if len(errors) > 0 {
-		return ValidateRecognitionRequestMultiError(errors)
 	}
 
 	return nil
 }
-
-// ValidateRecognitionRequestMultiError is an error wrapping multiple
-// validation errors returned by ValidateRecognitionRequest.ValidateAll() if
-// the designated constraints aren't met.
-type ValidateRecognitionRequestMultiError []error
-
-// Error returns a concatenation of all the error messages it wraps.
-func (m ValidateRecognitionRequestMultiError) Error() string {
-	var msgs []string
-	for _, err := range m {
-		msgs = append(msgs, err.Error())
-	}
-	return strings.Join(msgs, "; ")
-}
-
-// AllErrors returns a list of validation violation errors.
-func (m ValidateRecognitionRequestMultiError) AllErrors() []error { return m }
 
 // ValidateRecognitionRequestValidationError is the validation error returned
 // by ValidateRecognitionRequest.Validate if the designated constraints aren't met.
@@ -910,25 +543,11 @@ var _ interface {
 
 // Validate checks the field values on CreateEnrollmentResponse with the rules
 // defined in the proto definition for this message. If any rules are
-// violated, the first error encountered is returned, or nil if there are no violations.
+// violated, an error is returned.
 func (m *CreateEnrollmentResponse) Validate() error {
-	return m.validate(false)
-}
-
-// ValidateAll checks the field values on CreateEnrollmentResponse with the
-// rules defined in the proto definition for this message. If any rules are
-// violated, the result is a list of violation errors wrapped in
-// CreateEnrollmentResponseMultiError, or nil if none found.
-func (m *CreateEnrollmentResponse) ValidateAll() error {
-	return m.validate(true)
-}
-
-func (m *CreateEnrollmentResponse) validate(all bool) error {
 	if m == nil {
 		return nil
 	}
-
-	var errors []error
 
 	// no validation rules for PercentComplete
 
@@ -942,26 +561,7 @@ func (m *CreateEnrollmentResponse) validate(all bool) error {
 
 	// no validation rules for Score
 
-	if all {
-		switch v := interface{}(m.GetEnrollmentToken()).(type) {
-		case interface{ ValidateAll() error }:
-			if err := v.ValidateAll(); err != nil {
-				errors = append(errors, CreateEnrollmentResponseValidationError{
-					field:  "EnrollmentToken",
-					reason: "embedded message failed validation",
-					cause:  err,
-				})
-			}
-		case interface{ Validate() error }:
-			if err := v.Validate(); err != nil {
-				errors = append(errors, CreateEnrollmentResponseValidationError{
-					field:  "EnrollmentToken",
-					reason: "embedded message failed validation",
-					cause:  err,
-				})
-			}
-		}
-	} else if v, ok := interface{}(m.GetEnrollmentToken()).(interface{ Validate() error }); ok {
+	if v, ok := interface{}(m.GetEnrollmentToken()).(interface{ Validate() error }); ok {
 		if err := v.Validate(); err != nil {
 			return CreateEnrollmentResponseValidationError{
 				field:  "EnrollmentToken",
@@ -971,29 +571,12 @@ func (m *CreateEnrollmentResponse) validate(all bool) error {
 		}
 	}
 
-	if len(errors) > 0 {
-		return CreateEnrollmentResponseMultiError(errors)
-	}
+	// no validation rules for DidFindFace
+
+	// no validation rules for ProbabilityFace
 
 	return nil
 }
-
-// CreateEnrollmentResponseMultiError is an error wrapping multiple validation
-// errors returned by CreateEnrollmentResponse.ValidateAll() if the designated
-// constraints aren't met.
-type CreateEnrollmentResponseMultiError []error
-
-// Error returns a concatenation of all the error messages it wraps.
-func (m CreateEnrollmentResponseMultiError) Error() string {
-	var msgs []string
-	for _, err := range m {
-		msgs = append(msgs, err.Error())
-	}
-	return strings.Join(msgs, "; ")
-}
-
-// AllErrors returns a list of validation violation errors.
-func (m CreateEnrollmentResponseMultiError) AllErrors() []error { return m }
 
 // CreateEnrollmentResponseValidationError is the validation error returned by
 // CreateEnrollmentResponse.Validate if the designated constraints aren't met.
@@ -1053,25 +636,11 @@ var _ interface {
 
 // Validate checks the field values on AuthenticateResponse with the rules
 // defined in the proto definition for this message. If any rules are
-// violated, the first error encountered is returned, or nil if there are no violations.
+// violated, an error is returned.
 func (m *AuthenticateResponse) Validate() error {
-	return m.validate(false)
-}
-
-// ValidateAll checks the field values on AuthenticateResponse with the rules
-// defined in the proto definition for this message. If any rules are
-// violated, the result is a list of violation errors wrapped in
-// AuthenticateResponseMultiError, or nil if none found.
-func (m *AuthenticateResponse) ValidateAll() error {
-	return m.validate(true)
-}
-
-func (m *AuthenticateResponse) validate(all bool) error {
 	if m == nil {
 		return nil
 	}
-
-	var errors []error
 
 	// no validation rules for Success
 
@@ -1079,26 +648,7 @@ func (m *AuthenticateResponse) validate(all bool) error {
 
 	// no validation rules for IsAlive
 
-	if all {
-		switch v := interface{}(m.GetToken()).(type) {
-		case interface{ ValidateAll() error }:
-			if err := v.ValidateAll(); err != nil {
-				errors = append(errors, AuthenticateResponseValidationError{
-					field:  "Token",
-					reason: "embedded message failed validation",
-					cause:  err,
-				})
-			}
-		case interface{ Validate() error }:
-			if err := v.Validate(); err != nil {
-				errors = append(errors, AuthenticateResponseValidationError{
-					field:  "Token",
-					reason: "embedded message failed validation",
-					cause:  err,
-				})
-			}
-		}
-	} else if v, ok := interface{}(m.GetToken()).(interface{ Validate() error }); ok {
+	if v, ok := interface{}(m.GetToken()).(interface{ Validate() error }); ok {
 		if err := v.Validate(); err != nil {
 			return AuthenticateResponseValidationError{
 				field:  "Token",
@@ -1112,29 +662,12 @@ func (m *AuthenticateResponse) validate(all bool) error {
 
 	// no validation rules for EnrollmentId
 
-	if len(errors) > 0 {
-		return AuthenticateResponseMultiError(errors)
-	}
+	// no validation rules for DidFindFace
+
+	// no validation rules for ProbabilityFace
 
 	return nil
 }
-
-// AuthenticateResponseMultiError is an error wrapping multiple validation
-// errors returned by AuthenticateResponse.ValidateAll() if the designated
-// constraints aren't met.
-type AuthenticateResponseMultiError []error
-
-// Error returns a concatenation of all the error messages it wraps.
-func (m AuthenticateResponseMultiError) Error() string {
-	var msgs []string
-	for _, err := range m {
-		msgs = append(msgs, err.Error())
-	}
-	return strings.Join(msgs, "; ")
-}
-
-// AllErrors returns a list of validation violation errors.
-func (m AuthenticateResponseMultiError) AllErrors() []error { return m }
 
 // AuthenticateResponseValidationError is the validation error returned by
 // AuthenticateResponse.Validate if the designated constraints aren't met.
@@ -1194,53 +727,22 @@ var _ interface {
 
 // Validate checks the field values on LivenessRecognitionResponse with the
 // rules defined in the proto definition for this message. If any rules are
-// violated, the first error encountered is returned, or nil if there are no violations.
+// violated, an error is returned.
 func (m *LivenessRecognitionResponse) Validate() error {
-	return m.validate(false)
-}
-
-// ValidateAll checks the field values on LivenessRecognitionResponse with the
-// rules defined in the proto definition for this message. If any rules are
-// violated, the result is a list of violation errors wrapped in
-// LivenessRecognitionResponseMultiError, or nil if none found.
-func (m *LivenessRecognitionResponse) ValidateAll() error {
-	return m.validate(true)
-}
-
-func (m *LivenessRecognitionResponse) validate(all bool) error {
 	if m == nil {
 		return nil
 	}
-
-	var errors []error
 
 	// no validation rules for IsAlive
 
 	// no validation rules for Score
 
-	if len(errors) > 0 {
-		return LivenessRecognitionResponseMultiError(errors)
-	}
+	// no validation rules for DidFindFace
+
+	// no validation rules for ProbabilityFace
 
 	return nil
 }
-
-// LivenessRecognitionResponseMultiError is an error wrapping multiple
-// validation errors returned by LivenessRecognitionResponse.ValidateAll() if
-// the designated constraints aren't met.
-type LivenessRecognitionResponseMultiError []error
-
-// Error returns a concatenation of all the error messages it wraps.
-func (m LivenessRecognitionResponseMultiError) Error() string {
-	var msgs []string
-	for _, err := range m {
-		msgs = append(msgs, err.Error())
-	}
-	return strings.Join(msgs, "; ")
-}
-
-// AllErrors returns a list of validation violation errors.
-func (m LivenessRecognitionResponseMultiError) AllErrors() []error { return m }
 
 // LivenessRecognitionResponseValidationError is the validation error returned
 // by LivenessRecognitionResponse.Validate if the designated constraints
@@ -1301,103 +803,50 @@ var _ interface {
 
 // Validate checks the field values on CreateEnrollmentConfig with the rules
 // defined in the proto definition for this message. If any rules are
-// violated, the first error encountered is returned, or nil if there are no violations.
+// violated, an error is returned.
 func (m *CreateEnrollmentConfig) Validate() error {
-	return m.validate(false)
-}
-
-// ValidateAll checks the field values on CreateEnrollmentConfig with the rules
-// defined in the proto definition for this message. If any rules are
-// violated, the result is a list of violation errors wrapped in
-// CreateEnrollmentConfigMultiError, or nil if none found.
-func (m *CreateEnrollmentConfig) ValidateAll() error {
-	return m.validate(true)
-}
-
-func (m *CreateEnrollmentConfig) validate(all bool) error {
 	if m == nil {
 		return nil
 	}
 
-	var errors []error
-
 	if l := utf8.RuneCountInString(m.GetUserId()); l < 1 || l > 127 {
-		err := CreateEnrollmentConfigValidationError{
+		return CreateEnrollmentConfigValidationError{
 			field:  "UserId",
 			reason: "value length must be between 1 and 127 runes, inclusive",
 		}
-		if !all {
-			return err
-		}
-		errors = append(errors, err)
 	}
 
 	if l := utf8.RuneCountInString(m.GetDeviceId()); l < 1 || l > 127 {
-		err := CreateEnrollmentConfigValidationError{
+		return CreateEnrollmentConfigValidationError{
 			field:  "DeviceId",
 			reason: "value length must be between 1 and 127 runes, inclusive",
 		}
-		if !all {
-			return err
-		}
-		errors = append(errors, err)
 	}
 
 	if l := utf8.RuneCountInString(m.GetModelName()); l < 1 || l > 255 {
-		err := CreateEnrollmentConfigValidationError{
+		return CreateEnrollmentConfigValidationError{
 			field:  "ModelName",
 			reason: "value length must be between 1 and 255 runes, inclusive",
 		}
-		if !all {
-			return err
-		}
-		errors = append(errors, err)
 	}
 
 	if utf8.RuneCountInString(m.GetDescription()) > 1023 {
-		err := CreateEnrollmentConfigValidationError{
+		return CreateEnrollmentConfigValidationError{
 			field:  "Description",
 			reason: "value length must be at most 1023 runes",
 		}
-		if !all {
-			return err
-		}
-		errors = append(errors, err)
 	}
 
 	// no validation rules for IsLivenessEnabled
 
 	if _, ok := RecognitionThreshold_name[int32(m.GetLivenessThreshold())]; !ok {
-		err := CreateEnrollmentConfigValidationError{
+		return CreateEnrollmentConfigValidationError{
 			field:  "LivenessThreshold",
 			reason: "value must be one of the defined enum values",
 		}
-		if !all {
-			return err
-		}
-		errors = append(errors, err)
 	}
 
-	if all {
-		switch v := interface{}(m.GetCompression()).(type) {
-		case interface{ ValidateAll() error }:
-			if err := v.ValidateAll(); err != nil {
-				errors = append(errors, CreateEnrollmentConfigValidationError{
-					field:  "Compression",
-					reason: "embedded message failed validation",
-					cause:  err,
-				})
-			}
-		case interface{ Validate() error }:
-			if err := v.Validate(); err != nil {
-				errors = append(errors, CreateEnrollmentConfigValidationError{
-					field:  "Compression",
-					reason: "embedded message failed validation",
-					cause:  err,
-				})
-			}
-		}
-	} else if v, ok := interface{}(m.GetCompression()).(interface{ Validate() error }); ok {
+	if v, ok := interface{}(m.GetCompression()).(interface{ Validate() error }); ok {
 		if err := v.Validate(); err != nil {
 			return CreateEnrollmentConfigValidationError{
 				field:  "Compression",
@@ -1408,43 +857,18 @@ func (m *CreateEnrollmentConfig) validate(all bool) error {
 	}
 
 	if utf8.RuneCountInString(m.GetReferenceId()) > 127 {
-		err := CreateEnrollmentConfigValidationError{
+		return CreateEnrollmentConfigValidationError{
 			field:  "ReferenceId",
 			reason: "value length must be at most 127 runes",
 		}
-		if !all {
-			return err
-		}
-		errors = append(errors, err)
 	}
 
 	// no validation rules for NumLivenessFramesRequired
 
 	// no validation rules for DisableServerEnrollmentTemplateStorage
 
-	if len(errors) > 0 {
-		return CreateEnrollmentConfigMultiError(errors)
-	}
-
 	return nil
 }
-
-// CreateEnrollmentConfigMultiError is an error wrapping multiple validation
-// errors returned by CreateEnrollmentConfig.ValidateAll() if the designated
-// constraints aren't met.
-type CreateEnrollmentConfigMultiError []error
-
-// Error returns a concatenation of all the error messages it wraps.
-func (m CreateEnrollmentConfigMultiError) Error() string {
-	var msgs []string
-	for _, err := range m {
-		msgs = append(msgs, err.Error())
-	}
-	return strings.Join(msgs, "; ")
-}
-
-// AllErrors returns a list of validation violation errors.
-func (m CreateEnrollmentConfigMultiError) AllErrors() []error { return m }
 
 // CreateEnrollmentConfigValidationError is the validation error returned by
 // CreateEnrollmentConfig.Validate if the designated constraints aren't met.
@@ -1504,59 +928,22 @@ var _ interface {
 
 // Validate checks the field values on AuthenticateConfig with the rules
 // defined in the proto definition for this message. If any rules are
-// violated, the first error encountered is returned, or nil if there are no violations.
+// violated, an error is returned.
 func (m *AuthenticateConfig) Validate() error {
-	return m.validate(false)
-}
-
-// ValidateAll checks the field values on AuthenticateConfig with the rules
-// defined in the proto definition for this message. If any rules are
-// violated, the result is a list of violation errors wrapped in
-// AuthenticateConfigMultiError, or nil if none found.
-func (m *AuthenticateConfig) ValidateAll() error {
-	return m.validate(true)
-}
-
-func (m *AuthenticateConfig) validate(all bool) error {
 	if m == nil {
 		return nil
 	}
 
-	var errors []error
-
 	// no validation rules for IsLivenessEnabled
 
 	if _, ok := RecognitionThreshold_name[int32(m.GetLivenessThreshold())]; !ok {
-		err := AuthenticateConfigValidationError{
+		return AuthenticateConfigValidationError{
 			field:  "LivenessThreshold",
 			reason: "value must be one of the defined enum values",
 		}
-		if !all {
-			return err
-		}
-		errors = append(errors, err)
 	}
 
-	if all {
-		switch v := interface{}(m.GetCompression()).(type) {
-		case interface{ ValidateAll() error }:
-			if err := v.ValidateAll(); err != nil {
-				errors = append(errors, AuthenticateConfigValidationError{
-					field:  "Compression",
-					reason: "embedded message failed validation",
-					cause:  err,
-				})
-			}
-		case interface{ Validate() error }:
-			if err := v.Validate(); err != nil {
-				errors = append(errors, AuthenticateConfigValidationError{
-					field:  "Compression",
-					reason: "embedded message failed validation",
-					cause:  err,
-				})
-			}
-		}
-	} else if v, ok := interface{}(m.GetCompression()).(interface{ Validate() error }); ok {
+	if v, ok := interface{}(m.GetCompression()).(interface{ Validate() error }); ok {
 		if err := v.Validate(); err != nil {
 			return AuthenticateConfigValidationError{
 				field:  "Compression",
@@ -1570,62 +957,27 @@ func (m *AuthenticateConfig) validate(all bool) error {
 
 	// no validation rules for EnrollmentToken
 
-	oneofAuthIdPresent := false
-	switch v := m.AuthId.(type) {
+	switch m.AuthId.(type) {
+
 	case *AuthenticateConfig_EnrollmentId:
-		if v == nil {
-			err := AuthenticateConfigValidationError{
-				field:  "AuthId",
-				reason: "oneof value cannot be a typed-nil",
-			}
-			if !all {
-				return err
-			}
-			errors = append(errors, err)
-		}
-		oneofAuthIdPresent = true
 
 		if err := m._validateUuid(m.GetEnrollmentId()); err != nil {
-			err = AuthenticateConfigValidationError{
+			return AuthenticateConfigValidationError{
 				field:  "EnrollmentId",
 				reason: "value must be a valid UUID",
 				cause:  err,
 			}
-			if !all {
-				return err
-			}
-			errors = append(errors, err)
 		}
 
 	case *AuthenticateConfig_EnrollmentGroupId:
-		if v == nil {
-			err := AuthenticateConfigValidationError{
-				field:  "AuthId",
-				reason: "oneof value cannot be a typed-nil",
-			}
-			if !all {
-				return err
-			}
-			errors = append(errors, err)
-		}
-		oneofAuthIdPresent = true
 		// no validation rules for EnrollmentGroupId
+
 	default:
-		_ = v // ensures v is used
-	}
-	if !oneofAuthIdPresent {
-		err := AuthenticateConfigValidationError{
+		return AuthenticateConfigValidationError{
 			field:  "AuthId",
 			reason: "value is required",
 		}
-		if !all {
-			return err
-		}
-		errors = append(errors, err)
-	}
 
-	if len(errors) > 0 {
-		return AuthenticateConfigMultiError(errors)
 	}
 
 	return nil
@@ -1638,23 +990,6 @@ func (m *AuthenticateConfig) _validateUuid(uuid string) error {
 
 	return nil
 }
-
-// AuthenticateConfigMultiError is an error wrapping multiple validation errors
-// returned by AuthenticateConfig.ValidateAll() if the designated constraints
-// aren't met.
-type AuthenticateConfigMultiError []error
-
-// Error returns a concatenation of all the error messages it wraps.
-func (m AuthenticateConfigMultiError) Error() string {
-	var msgs []string
-	for _, err := range m {
-		msgs = append(msgs, err.Error())
-	}
-	return strings.Join(msgs, "; ")
-}
-
-// AllErrors returns a list of validation violation errors.
-func (m AuthenticateConfigMultiError) AllErrors() []error { return m }
 
 // AuthenticateConfigValidationError is the validation error returned by
 // AuthenticateConfig.Validate if the designated constraints aren't met.
@@ -1714,82 +1049,35 @@ var _ interface {
 
 // Validate checks the field values on ValidateRecognitionConfig with the rules
 // defined in the proto definition for this message. If any rules are
-// violated, the first error encountered is returned, or nil if there are no violations.
+// violated, an error is returned.
 func (m *ValidateRecognitionConfig) Validate() error {
-	return m.validate(false)
-}
-
-// ValidateAll checks the field values on ValidateRecognitionConfig with the
-// rules defined in the proto definition for this message. If any rules are
-// violated, the result is a list of violation errors wrapped in
-// ValidateRecognitionConfigMultiError, or nil if none found.
-func (m *ValidateRecognitionConfig) ValidateAll() error {
-	return m.validate(true)
-}
-
-func (m *ValidateRecognitionConfig) validate(all bool) error {
 	if m == nil {
 		return nil
 	}
 
-	var errors []error
-
 	if l := utf8.RuneCountInString(m.GetModelName()); l < 1 || l > 255 {
-		err := ValidateRecognitionConfigValidationError{
+		return ValidateRecognitionConfigValidationError{
 			field:  "ModelName",
 			reason: "value length must be between 1 and 255 runes, inclusive",
 		}
-		if !all {
-			return err
-		}
-		errors = append(errors, err)
 	}
 
 	if l := utf8.RuneCountInString(m.GetUserId()); l < 1 || l > 127 {
-		err := ValidateRecognitionConfigValidationError{
+		return ValidateRecognitionConfigValidationError{
 			field:  "UserId",
 			reason: "value length must be between 1 and 127 runes, inclusive",
 		}
-		if !all {
-			return err
-		}
-		errors = append(errors, err)
 	}
 
 	if _, ok := RecognitionThreshold_name[int32(m.GetThreshold())]; !ok {
-		err := ValidateRecognitionConfigValidationError{
+		return ValidateRecognitionConfigValidationError{
 			field:  "Threshold",
 			reason: "value must be one of the defined enum values",
 		}
-		if !all {
-			return err
-		}
-		errors = append(errors, err)
-	}
-
-	if len(errors) > 0 {
-		return ValidateRecognitionConfigMultiError(errors)
 	}
 
 	return nil
 }
-
-// ValidateRecognitionConfigMultiError is an error wrapping multiple validation
-// errors returned by ValidateRecognitionConfig.ValidateAll() if the
-// designated constraints aren't met.
-type ValidateRecognitionConfigMultiError []error
-
-// Error returns a concatenation of all the error messages it wraps.
-func (m ValidateRecognitionConfigMultiError) Error() string {
-	var msgs []string
-	for _, err := range m {
-		msgs = append(msgs, err.Error())
-	}
-	return strings.Join(msgs, "; ")
-}
-
-// AllErrors returns a list of validation violation errors.
-func (m ValidateRecognitionConfigMultiError) AllErrors() []error { return m }
 
 // ValidateRecognitionConfigValidationError is the validation error returned by
 // ValidateRecognitionConfig.Validate if the designated constraints aren't met.

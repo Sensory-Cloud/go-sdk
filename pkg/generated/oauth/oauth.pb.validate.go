@@ -11,12 +11,11 @@ import (
 	"net/mail"
 	"net/url"
 	"regexp"
-	"sort"
 	"strings"
 	"time"
 	"unicode/utf8"
 
-	"google.golang.org/protobuf/types/known/anypb"
+	"github.com/golang/protobuf/ptypes"
 
 	common "github.com/Sensory-Cloud/go-sdk/pkg/generated/common"
 )
@@ -33,8 +32,7 @@ var (
 	_ = time.Duration(0)
 	_ = (*url.URL)(nil)
 	_ = (*mail.Address)(nil)
-	_ = anypb.Any{}
-	_ = sort.Sort
+	_ = ptypes.DynamicAny{}
 
 	_ = common.KeyType(0)
 )
@@ -43,44 +41,22 @@ var (
 var _oauth_uuidPattern = regexp.MustCompile("^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$")
 
 // Validate checks the field values on TokenRequest with the rules defined in
-// the proto definition for this message. If any rules are violated, the first
-// error encountered is returned, or nil if there are no violations.
+// the proto definition for this message. If any rules are violated, an error
+// is returned.
 func (m *TokenRequest) Validate() error {
-	return m.validate(false)
-}
-
-// ValidateAll checks the field values on TokenRequest with the rules defined
-// in the proto definition for this message. If any rules are violated, the
-// result is a list of violation errors wrapped in TokenRequestMultiError, or
-// nil if none found.
-func (m *TokenRequest) ValidateAll() error {
-	return m.validate(true)
-}
-
-func (m *TokenRequest) validate(all bool) error {
 	if m == nil {
 		return nil
 	}
 
-	var errors []error
-
 	if err := m._validateUuid(m.GetClientId()); err != nil {
-		err = TokenRequestValidationError{
+		return TokenRequestValidationError{
 			field:  "ClientId",
 			reason: "value must be a valid UUID",
 			cause:  err,
 		}
-		if !all {
-			return err
-		}
-		errors = append(errors, err)
 	}
 
 	// no validation rules for Secret
-
-	if len(errors) > 0 {
-		return TokenRequestMultiError(errors)
-	}
 
 	return nil
 }
@@ -92,22 +68,6 @@ func (m *TokenRequest) _validateUuid(uuid string) error {
 
 	return nil
 }
-
-// TokenRequestMultiError is an error wrapping multiple validation errors
-// returned by TokenRequest.ValidateAll() if the designated constraints aren't met.
-type TokenRequestMultiError []error
-
-// Error returns a concatenation of all the error messages it wraps.
-func (m TokenRequestMultiError) Error() string {
-	var msgs []string
-	for _, err := range m {
-		msgs = append(msgs, err.Error())
-	}
-	return strings.Join(msgs, "; ")
-}
-
-// AllErrors returns a list of validation violation errors.
-func (m TokenRequestMultiError) AllErrors() []error { return m }
 
 // TokenRequestValidationError is the validation error returned by
 // TokenRequest.Validate if the designated constraints aren't met.
@@ -164,72 +124,29 @@ var _ interface {
 } = TokenRequestValidationError{}
 
 // Validate checks the field values on SignTokenRequest with the rules defined
-// in the proto definition for this message. If any rules are violated, the
-// first error encountered is returned, or nil if there are no violations.
+// in the proto definition for this message. If any rules are violated, an
+// error is returned.
 func (m *SignTokenRequest) Validate() error {
-	return m.validate(false)
-}
-
-// ValidateAll checks the field values on SignTokenRequest with the rules
-// defined in the proto definition for this message. If any rules are
-// violated, the result is a list of violation errors wrapped in
-// SignTokenRequestMultiError, or nil if none found.
-func (m *SignTokenRequest) ValidateAll() error {
-	return m.validate(true)
-}
-
-func (m *SignTokenRequest) validate(all bool) error {
 	if m == nil {
 		return nil
 	}
 
-	var errors []error
-
 	if l := utf8.RuneCountInString(m.GetSubject()); l < 1 || l > 127 {
-		err := SignTokenRequestValidationError{
+		return SignTokenRequestValidationError{
 			field:  "Subject",
 			reason: "value length must be between 1 and 127 runes, inclusive",
 		}
-		if !all {
-			return err
-		}
-		errors = append(errors, err)
 	}
 
 	if _, ok := SignTokenRequest_TokenScope_name[int32(m.GetScope())]; !ok {
-		err := SignTokenRequestValidationError{
+		return SignTokenRequestValidationError{
 			field:  "Scope",
 			reason: "value must be one of the defined enum values",
 		}
-		if !all {
-			return err
-		}
-		errors = append(errors, err)
-	}
-
-	if len(errors) > 0 {
-		return SignTokenRequestMultiError(errors)
 	}
 
 	return nil
 }
-
-// SignTokenRequestMultiError is an error wrapping multiple validation errors
-// returned by SignTokenRequest.ValidateAll() if the designated constraints
-// aren't met.
-type SignTokenRequestMultiError []error
-
-// Error returns a concatenation of all the error messages it wraps.
-func (m SignTokenRequestMultiError) Error() string {
-	var msgs []string
-	for _, err := range m {
-		msgs = append(msgs, err.Error())
-	}
-	return strings.Join(msgs, "; ")
-}
-
-// AllErrors returns a list of validation violation errors.
-func (m SignTokenRequestMultiError) AllErrors() []error { return m }
 
 // SignTokenRequestValidationError is the validation error returned by
 // SignTokenRequest.Validate if the designated constraints aren't met.
@@ -286,50 +203,15 @@ var _ interface {
 } = SignTokenRequestValidationError{}
 
 // Validate checks the field values on WhoAmIRequest with the rules defined in
-// the proto definition for this message. If any rules are violated, the first
-// error encountered is returned, or nil if there are no violations.
+// the proto definition for this message. If any rules are violated, an error
+// is returned.
 func (m *WhoAmIRequest) Validate() error {
-	return m.validate(false)
-}
-
-// ValidateAll checks the field values on WhoAmIRequest with the rules defined
-// in the proto definition for this message. If any rules are violated, the
-// result is a list of violation errors wrapped in WhoAmIRequestMultiError, or
-// nil if none found.
-func (m *WhoAmIRequest) ValidateAll() error {
-	return m.validate(true)
-}
-
-func (m *WhoAmIRequest) validate(all bool) error {
 	if m == nil {
 		return nil
 	}
 
-	var errors []error
-
-	if len(errors) > 0 {
-		return WhoAmIRequestMultiError(errors)
-	}
-
 	return nil
 }
-
-// WhoAmIRequestMultiError is an error wrapping multiple validation errors
-// returned by WhoAmIRequest.ValidateAll() if the designated constraints
-// aren't met.
-type WhoAmIRequestMultiError []error
-
-// Error returns a concatenation of all the error messages it wraps.
-func (m WhoAmIRequestMultiError) Error() string {
-	var msgs []string
-	for _, err := range m {
-		msgs = append(msgs, err.Error())
-	}
-	return strings.Join(msgs, "; ")
-}
-
-// AllErrors returns a list of validation violation errors.
-func (m WhoAmIRequestMultiError) AllErrors() []error { return m }
 
 // WhoAmIRequestValidationError is the validation error returned by
 // WhoAmIRequest.Validate if the designated constraints aren't met.
@@ -386,54 +268,19 @@ var _ interface {
 } = WhoAmIRequestValidationError{}
 
 // Validate checks the field values on WhoAmIResponse with the rules defined in
-// the proto definition for this message. If any rules are violated, the first
-// error encountered is returned, or nil if there are no violations.
+// the proto definition for this message. If any rules are violated, an error
+// is returned.
 func (m *WhoAmIResponse) Validate() error {
-	return m.validate(false)
-}
-
-// ValidateAll checks the field values on WhoAmIResponse with the rules defined
-// in the proto definition for this message. If any rules are violated, the
-// result is a list of violation errors wrapped in WhoAmIResponseMultiError,
-// or nil if none found.
-func (m *WhoAmIResponse) ValidateAll() error {
-	return m.validate(true)
-}
-
-func (m *WhoAmIResponse) validate(all bool) error {
 	if m == nil {
 		return nil
 	}
-
-	var errors []error
 
 	// no validation rules for ClientId
 
 	// no validation rules for TenantId
 
-	if len(errors) > 0 {
-		return WhoAmIResponseMultiError(errors)
-	}
-
 	return nil
 }
-
-// WhoAmIResponseMultiError is an error wrapping multiple validation errors
-// returned by WhoAmIResponse.ValidateAll() if the designated constraints
-// aren't met.
-type WhoAmIResponseMultiError []error
-
-// Error returns a concatenation of all the error messages it wraps.
-func (m WhoAmIResponseMultiError) Error() string {
-	var msgs []string
-	for _, err := range m {
-		msgs = append(msgs, err.Error())
-	}
-	return strings.Join(msgs, "; ")
-}
-
-// AllErrors returns a list of validation violation errors.
-func (m WhoAmIResponseMultiError) AllErrors() []error { return m }
 
 // WhoAmIResponseValidationError is the validation error returned by
 // WhoAmIResponse.Validate if the designated constraints aren't met.
@@ -490,41 +337,19 @@ var _ interface {
 } = WhoAmIResponseValidationError{}
 
 // Validate checks the field values on PublicKeyRequest with the rules defined
-// in the proto definition for this message. If any rules are violated, the
-// first error encountered is returned, or nil if there are no violations.
+// in the proto definition for this message. If any rules are violated, an
+// error is returned.
 func (m *PublicKeyRequest) Validate() error {
-	return m.validate(false)
-}
-
-// ValidateAll checks the field values on PublicKeyRequest with the rules
-// defined in the proto definition for this message. If any rules are
-// violated, the result is a list of violation errors wrapped in
-// PublicKeyRequestMultiError, or nil if none found.
-func (m *PublicKeyRequest) ValidateAll() error {
-	return m.validate(true)
-}
-
-func (m *PublicKeyRequest) validate(all bool) error {
 	if m == nil {
 		return nil
 	}
 
-	var errors []error
-
 	if err := m._validateUuid(m.GetKeyId()); err != nil {
-		err = PublicKeyRequestValidationError{
+		return PublicKeyRequestValidationError{
 			field:  "KeyId",
 			reason: "value must be a valid UUID",
 			cause:  err,
 		}
-		if !all {
-			return err
-		}
-		errors = append(errors, err)
-	}
-
-	if len(errors) > 0 {
-		return PublicKeyRequestMultiError(errors)
 	}
 
 	return nil
@@ -537,23 +362,6 @@ func (m *PublicKeyRequest) _validateUuid(uuid string) error {
 
 	return nil
 }
-
-// PublicKeyRequestMultiError is an error wrapping multiple validation errors
-// returned by PublicKeyRequest.ValidateAll() if the designated constraints
-// aren't met.
-type PublicKeyRequestMultiError []error
-
-// Error returns a concatenation of all the error messages it wraps.
-func (m PublicKeyRequestMultiError) Error() string {
-	var msgs []string
-	for _, err := range m {
-		msgs = append(msgs, err.Error())
-	}
-	return strings.Join(msgs, "; ")
-}
-
-// AllErrors returns a list of validation violation errors.
-func (m PublicKeyRequestMultiError) AllErrors() []error { return m }
 
 // PublicKeyRequestValidationError is the validation error returned by
 // PublicKeyRequest.Validate if the designated constraints aren't met.
@@ -610,54 +418,19 @@ var _ interface {
 } = PublicKeyRequestValidationError{}
 
 // Validate checks the field values on PublicKeyResponse with the rules defined
-// in the proto definition for this message. If any rules are violated, the
-// first error encountered is returned, or nil if there are no violations.
+// in the proto definition for this message. If any rules are violated, an
+// error is returned.
 func (m *PublicKeyResponse) Validate() error {
-	return m.validate(false)
-}
-
-// ValidateAll checks the field values on PublicKeyResponse with the rules
-// defined in the proto definition for this message. If any rules are
-// violated, the result is a list of violation errors wrapped in
-// PublicKeyResponseMultiError, or nil if none found.
-func (m *PublicKeyResponse) ValidateAll() error {
-	return m.validate(true)
-}
-
-func (m *PublicKeyResponse) validate(all bool) error {
 	if m == nil {
 		return nil
 	}
-
-	var errors []error
 
 	// no validation rules for PublicKey
 
 	// no validation rules for KeyType
 
-	if len(errors) > 0 {
-		return PublicKeyResponseMultiError(errors)
-	}
-
 	return nil
 }
-
-// PublicKeyResponseMultiError is an error wrapping multiple validation errors
-// returned by PublicKeyResponse.ValidateAll() if the designated constraints
-// aren't met.
-type PublicKeyResponseMultiError []error
-
-// Error returns a concatenation of all the error messages it wraps.
-func (m PublicKeyResponseMultiError) Error() string {
-	var msgs []string
-	for _, err := range m {
-		msgs = append(msgs, err.Error())
-	}
-	return strings.Join(msgs, "; ")
-}
-
-// AllErrors returns a list of validation violation errors.
-func (m PublicKeyResponseMultiError) AllErrors() []error { return m }
 
 // PublicKeyResponseValidationError is the validation error returned by
 // PublicKeyResponse.Validate if the designated constraints aren't met.

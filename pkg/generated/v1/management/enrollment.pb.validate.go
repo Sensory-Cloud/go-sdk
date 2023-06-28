@@ -11,12 +11,11 @@ import (
 	"net/mail"
 	"net/url"
 	"regexp"
-	"sort"
 	"strings"
 	"time"
 	"unicode/utf8"
 
-	"google.golang.org/protobuf/types/known/anypb"
+	"github.com/golang/protobuf/ptypes"
 
 	common "github.com/Sensory-Cloud/go-sdk/pkg/generated/common"
 )
@@ -33,8 +32,9 @@ var (
 	_ = time.Duration(0)
 	_ = (*url.URL)(nil)
 	_ = (*mail.Address)(nil)
-	_ = anypb.Any{}
-	_ = sort.Sort
+	_ = ptypes.DynamicAny{}
+
+	_ = common.ModelType(0)
 
 	_ = common.ModelType(0)
 )
@@ -44,60 +44,21 @@ var _enrollment_uuidPattern = regexp.MustCompile("^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}
 
 // Validate checks the field values on GetEnrollmentsRequest with the rules
 // defined in the proto definition for this message. If any rules are
-// violated, the first error encountered is returned, or nil if there are no violations.
+// violated, an error is returned.
 func (m *GetEnrollmentsRequest) Validate() error {
-	return m.validate(false)
-}
-
-// ValidateAll checks the field values on GetEnrollmentsRequest with the rules
-// defined in the proto definition for this message. If any rules are
-// violated, the result is a list of violation errors wrapped in
-// GetEnrollmentsRequestMultiError, or nil if none found.
-func (m *GetEnrollmentsRequest) ValidateAll() error {
-	return m.validate(true)
-}
-
-func (m *GetEnrollmentsRequest) validate(all bool) error {
 	if m == nil {
 		return nil
 	}
 
-	var errors []error
-
 	if l := utf8.RuneCountInString(m.GetUserId()); l < 1 || l > 127 {
-		err := GetEnrollmentsRequestValidationError{
+		return GetEnrollmentsRequestValidationError{
 			field:  "UserId",
 			reason: "value length must be between 1 and 127 runes, inclusive",
 		}
-		if !all {
-			return err
-		}
-		errors = append(errors, err)
-	}
-
-	if len(errors) > 0 {
-		return GetEnrollmentsRequestMultiError(errors)
 	}
 
 	return nil
 }
-
-// GetEnrollmentsRequestMultiError is an error wrapping multiple validation
-// errors returned by GetEnrollmentsRequest.ValidateAll() if the designated
-// constraints aren't met.
-type GetEnrollmentsRequestMultiError []error
-
-// Error returns a concatenation of all the error messages it wraps.
-func (m GetEnrollmentsRequestMultiError) Error() string {
-	var msgs []string
-	for _, err := range m {
-		msgs = append(msgs, err.Error())
-	}
-	return strings.Join(msgs, "; ")
-}
-
-// AllErrors returns a list of validation violation errors.
-func (m GetEnrollmentsRequestMultiError) AllErrors() []error { return m }
 
 // GetEnrollmentsRequestValidationError is the validation error returned by
 // GetEnrollmentsRequest.Validate if the designated constraints aren't met.
@@ -157,49 +118,16 @@ var _ interface {
 
 // Validate checks the field values on GetEnrollmentsResponse with the rules
 // defined in the proto definition for this message. If any rules are
-// violated, the first error encountered is returned, or nil if there are no violations.
+// violated, an error is returned.
 func (m *GetEnrollmentsResponse) Validate() error {
-	return m.validate(false)
-}
-
-// ValidateAll checks the field values on GetEnrollmentsResponse with the rules
-// defined in the proto definition for this message. If any rules are
-// violated, the result is a list of violation errors wrapped in
-// GetEnrollmentsResponseMultiError, or nil if none found.
-func (m *GetEnrollmentsResponse) ValidateAll() error {
-	return m.validate(true)
-}
-
-func (m *GetEnrollmentsResponse) validate(all bool) error {
 	if m == nil {
 		return nil
 	}
 
-	var errors []error
-
 	for idx, item := range m.GetEnrollments() {
 		_, _ = idx, item
 
-		if all {
-			switch v := interface{}(item).(type) {
-			case interface{ ValidateAll() error }:
-				if err := v.ValidateAll(); err != nil {
-					errors = append(errors, GetEnrollmentsResponseValidationError{
-						field:  fmt.Sprintf("Enrollments[%v]", idx),
-						reason: "embedded message failed validation",
-						cause:  err,
-					})
-				}
-			case interface{ Validate() error }:
-				if err := v.Validate(); err != nil {
-					errors = append(errors, GetEnrollmentsResponseValidationError{
-						field:  fmt.Sprintf("Enrollments[%v]", idx),
-						reason: "embedded message failed validation",
-						cause:  err,
-					})
-				}
-			}
-		} else if v, ok := interface{}(item).(interface{ Validate() error }); ok {
+		if v, ok := interface{}(item).(interface{ Validate() error }); ok {
 			if err := v.Validate(); err != nil {
 				return GetEnrollmentsResponseValidationError{
 					field:  fmt.Sprintf("Enrollments[%v]", idx),
@@ -213,29 +141,8 @@ func (m *GetEnrollmentsResponse) validate(all bool) error {
 
 	// no validation rules for IsRequestorTrusted
 
-	if len(errors) > 0 {
-		return GetEnrollmentsResponseMultiError(errors)
-	}
-
 	return nil
 }
-
-// GetEnrollmentsResponseMultiError is an error wrapping multiple validation
-// errors returned by GetEnrollmentsResponse.ValidateAll() if the designated
-// constraints aren't met.
-type GetEnrollmentsResponseMultiError []error
-
-// Error returns a concatenation of all the error messages it wraps.
-func (m GetEnrollmentsResponseMultiError) Error() string {
-	var msgs []string
-	for _, err := range m {
-		msgs = append(msgs, err.Error())
-	}
-	return strings.Join(msgs, "; ")
-}
-
-// AllErrors returns a list of validation violation errors.
-func (m GetEnrollmentsResponseMultiError) AllErrors() []error { return m }
 
 // GetEnrollmentsResponseValidationError is the validation error returned by
 // GetEnrollmentsResponse.Validate if the designated constraints aren't met.
@@ -295,48 +202,15 @@ var _ interface {
 
 // Validate checks the field values on EnrollmentResponse with the rules
 // defined in the proto definition for this message. If any rules are
-// violated, the first error encountered is returned, or nil if there are no violations.
+// violated, an error is returned.
 func (m *EnrollmentResponse) Validate() error {
-	return m.validate(false)
-}
-
-// ValidateAll checks the field values on EnrollmentResponse with the rules
-// defined in the proto definition for this message. If any rules are
-// violated, the result is a list of violation errors wrapped in
-// EnrollmentResponseMultiError, or nil if none found.
-func (m *EnrollmentResponse) ValidateAll() error {
-	return m.validate(true)
-}
-
-func (m *EnrollmentResponse) validate(all bool) error {
 	if m == nil {
 		return nil
 	}
 
-	var errors []error
-
 	// no validation rules for Id
 
-	if all {
-		switch v := interface{}(m.GetCreatedAt()).(type) {
-		case interface{ ValidateAll() error }:
-			if err := v.ValidateAll(); err != nil {
-				errors = append(errors, EnrollmentResponseValidationError{
-					field:  "CreatedAt",
-					reason: "embedded message failed validation",
-					cause:  err,
-				})
-			}
-		case interface{ Validate() error }:
-			if err := v.Validate(); err != nil {
-				errors = append(errors, EnrollmentResponseValidationError{
-					field:  "CreatedAt",
-					reason: "embedded message failed validation",
-					cause:  err,
-				})
-			}
-		}
-	} else if v, ok := interface{}(m.GetCreatedAt()).(interface{ Validate() error }); ok {
+	if v, ok := interface{}(m.GetCreatedAt()).(interface{ Validate() error }); ok {
 		if err := v.Validate(); err != nil {
 			return EnrollmentResponseValidationError{
 				field:  "CreatedAt",
@@ -346,26 +220,7 @@ func (m *EnrollmentResponse) validate(all bool) error {
 		}
 	}
 
-	if all {
-		switch v := interface{}(m.GetUpdatedAt()).(type) {
-		case interface{ ValidateAll() error }:
-			if err := v.ValidateAll(); err != nil {
-				errors = append(errors, EnrollmentResponseValidationError{
-					field:  "UpdatedAt",
-					reason: "embedded message failed validation",
-					cause:  err,
-				})
-			}
-		case interface{ Validate() error }:
-			if err := v.Validate(); err != nil {
-				errors = append(errors, EnrollmentResponseValidationError{
-					field:  "UpdatedAt",
-					reason: "embedded message failed validation",
-					cause:  err,
-				})
-			}
-		}
-	} else if v, ok := interface{}(m.GetUpdatedAt()).(interface{ Validate() error }); ok {
+	if v, ok := interface{}(m.GetUpdatedAt()).(interface{ Validate() error }); ok {
 		if err := v.Validate(); err != nil {
 			return EnrollmentResponseValidationError{
 				field:  "UpdatedAt",
@@ -387,26 +242,7 @@ func (m *EnrollmentResponse) validate(all bool) error {
 
 	// no validation rules for UserId
 
-	if all {
-		switch v := interface{}(m.GetCompression()).(type) {
-		case interface{ ValidateAll() error }:
-			if err := v.ValidateAll(); err != nil {
-				errors = append(errors, EnrollmentResponseValidationError{
-					field:  "Compression",
-					reason: "embedded message failed validation",
-					cause:  err,
-				})
-			}
-		case interface{ Validate() error }:
-			if err := v.Validate(); err != nil {
-				errors = append(errors, EnrollmentResponseValidationError{
-					field:  "Compression",
-					reason: "embedded message failed validation",
-					cause:  err,
-				})
-			}
-		}
-	} else if v, ok := interface{}(m.GetCompression()).(interface{ Validate() error }); ok {
+	if v, ok := interface{}(m.GetCompression()).(interface{ Validate() error }); ok {
 		if err := v.Validate(); err != nil {
 			return EnrollmentResponseValidationError{
 				field:  "Compression",
@@ -424,29 +260,8 @@ func (m *EnrollmentResponse) validate(all bool) error {
 
 	// no validation rules for DidEnrollAsBiometric
 
-	if len(errors) > 0 {
-		return EnrollmentResponseMultiError(errors)
-	}
-
 	return nil
 }
-
-// EnrollmentResponseMultiError is an error wrapping multiple validation errors
-// returned by EnrollmentResponse.ValidateAll() if the designated constraints
-// aren't met.
-type EnrollmentResponseMultiError []error
-
-// Error returns a concatenation of all the error messages it wraps.
-func (m EnrollmentResponseMultiError) Error() string {
-	var msgs []string
-	for _, err := range m {
-		msgs = append(msgs, err.Error())
-	}
-	return strings.Join(msgs, "; ")
-}
-
-// AllErrors returns a list of validation violation errors.
-func (m EnrollmentResponseMultiError) AllErrors() []error { return m }
 
 // EnrollmentResponseValidationError is the validation error returned by
 // EnrollmentResponse.Validate if the designated constraints aren't met.
@@ -506,49 +321,16 @@ var _ interface {
 
 // Validate checks the field values on GetEnrollmentGroupsResponse with the
 // rules defined in the proto definition for this message. If any rules are
-// violated, the first error encountered is returned, or nil if there are no violations.
+// violated, an error is returned.
 func (m *GetEnrollmentGroupsResponse) Validate() error {
-	return m.validate(false)
-}
-
-// ValidateAll checks the field values on GetEnrollmentGroupsResponse with the
-// rules defined in the proto definition for this message. If any rules are
-// violated, the result is a list of violation errors wrapped in
-// GetEnrollmentGroupsResponseMultiError, or nil if none found.
-func (m *GetEnrollmentGroupsResponse) ValidateAll() error {
-	return m.validate(true)
-}
-
-func (m *GetEnrollmentGroupsResponse) validate(all bool) error {
 	if m == nil {
 		return nil
 	}
 
-	var errors []error
-
 	for idx, item := range m.GetEnrollmentGroups() {
 		_, _ = idx, item
 
-		if all {
-			switch v := interface{}(item).(type) {
-			case interface{ ValidateAll() error }:
-				if err := v.ValidateAll(); err != nil {
-					errors = append(errors, GetEnrollmentGroupsResponseValidationError{
-						field:  fmt.Sprintf("EnrollmentGroups[%v]", idx),
-						reason: "embedded message failed validation",
-						cause:  err,
-					})
-				}
-			case interface{ Validate() error }:
-				if err := v.Validate(); err != nil {
-					errors = append(errors, GetEnrollmentGroupsResponseValidationError{
-						field:  fmt.Sprintf("EnrollmentGroups[%v]", idx),
-						reason: "embedded message failed validation",
-						cause:  err,
-					})
-				}
-			}
-		} else if v, ok := interface{}(item).(interface{ Validate() error }); ok {
+		if v, ok := interface{}(item).(interface{ Validate() error }); ok {
 			if err := v.Validate(); err != nil {
 				return GetEnrollmentGroupsResponseValidationError{
 					field:  fmt.Sprintf("EnrollmentGroups[%v]", idx),
@@ -560,29 +342,8 @@ func (m *GetEnrollmentGroupsResponse) validate(all bool) error {
 
 	}
 
-	if len(errors) > 0 {
-		return GetEnrollmentGroupsResponseMultiError(errors)
-	}
-
 	return nil
 }
-
-// GetEnrollmentGroupsResponseMultiError is an error wrapping multiple
-// validation errors returned by GetEnrollmentGroupsResponse.ValidateAll() if
-// the designated constraints aren't met.
-type GetEnrollmentGroupsResponseMultiError []error
-
-// Error returns a concatenation of all the error messages it wraps.
-func (m GetEnrollmentGroupsResponseMultiError) Error() string {
-	var msgs []string
-	for _, err := range m {
-		msgs = append(msgs, err.Error())
-	}
-	return strings.Join(msgs, "; ")
-}
-
-// AllErrors returns a list of validation violation errors.
-func (m GetEnrollmentGroupsResponseMultiError) AllErrors() []error { return m }
 
 // GetEnrollmentGroupsResponseValidationError is the validation error returned
 // by GetEnrollmentGroupsResponse.Validate if the designated constraints
@@ -643,48 +404,15 @@ var _ interface {
 
 // Validate checks the field values on EnrollmentGroupResponse with the rules
 // defined in the proto definition for this message. If any rules are
-// violated, the first error encountered is returned, or nil if there are no violations.
+// violated, an error is returned.
 func (m *EnrollmentGroupResponse) Validate() error {
-	return m.validate(false)
-}
-
-// ValidateAll checks the field values on EnrollmentGroupResponse with the
-// rules defined in the proto definition for this message. If any rules are
-// violated, the result is a list of violation errors wrapped in
-// EnrollmentGroupResponseMultiError, or nil if none found.
-func (m *EnrollmentGroupResponse) ValidateAll() error {
-	return m.validate(true)
-}
-
-func (m *EnrollmentGroupResponse) validate(all bool) error {
 	if m == nil {
 		return nil
 	}
 
-	var errors []error
-
 	// no validation rules for Id
 
-	if all {
-		switch v := interface{}(m.GetCreatedAt()).(type) {
-		case interface{ ValidateAll() error }:
-			if err := v.ValidateAll(); err != nil {
-				errors = append(errors, EnrollmentGroupResponseValidationError{
-					field:  "CreatedAt",
-					reason: "embedded message failed validation",
-					cause:  err,
-				})
-			}
-		case interface{ Validate() error }:
-			if err := v.Validate(); err != nil {
-				errors = append(errors, EnrollmentGroupResponseValidationError{
-					field:  "CreatedAt",
-					reason: "embedded message failed validation",
-					cause:  err,
-				})
-			}
-		}
-	} else if v, ok := interface{}(m.GetCreatedAt()).(interface{ Validate() error }); ok {
+	if v, ok := interface{}(m.GetCreatedAt()).(interface{ Validate() error }); ok {
 		if err := v.Validate(); err != nil {
 			return EnrollmentGroupResponseValidationError{
 				field:  "CreatedAt",
@@ -694,26 +422,7 @@ func (m *EnrollmentGroupResponse) validate(all bool) error {
 		}
 	}
 
-	if all {
-		switch v := interface{}(m.GetUpdatedAt()).(type) {
-		case interface{ ValidateAll() error }:
-			if err := v.ValidateAll(); err != nil {
-				errors = append(errors, EnrollmentGroupResponseValidationError{
-					field:  "UpdatedAt",
-					reason: "embedded message failed validation",
-					cause:  err,
-				})
-			}
-		case interface{ Validate() error }:
-			if err := v.Validate(); err != nil {
-				errors = append(errors, EnrollmentGroupResponseValidationError{
-					field:  "UpdatedAt",
-					reason: "embedded message failed validation",
-					cause:  err,
-				})
-			}
-		}
-	} else if v, ok := interface{}(m.GetUpdatedAt()).(interface{ Validate() error }); ok {
+	if v, ok := interface{}(m.GetUpdatedAt()).(interface{ Validate() error }); ok {
 		if err := v.Validate(); err != nil {
 			return EnrollmentGroupResponseValidationError{
 				field:  "UpdatedAt",
@@ -738,26 +447,7 @@ func (m *EnrollmentGroupResponse) validate(all bool) error {
 	for idx, item := range m.GetEnrollments() {
 		_, _ = idx, item
 
-		if all {
-			switch v := interface{}(item).(type) {
-			case interface{ ValidateAll() error }:
-				if err := v.ValidateAll(); err != nil {
-					errors = append(errors, EnrollmentGroupResponseValidationError{
-						field:  fmt.Sprintf("Enrollments[%v]", idx),
-						reason: "embedded message failed validation",
-						cause:  err,
-					})
-				}
-			case interface{ Validate() error }:
-				if err := v.Validate(); err != nil {
-					errors = append(errors, EnrollmentGroupResponseValidationError{
-						field:  fmt.Sprintf("Enrollments[%v]", idx),
-						reason: "embedded message failed validation",
-						cause:  err,
-					})
-				}
-			}
-		} else if v, ok := interface{}(item).(interface{ Validate() error }); ok {
+		if v, ok := interface{}(item).(interface{ Validate() error }); ok {
 			if err := v.Validate(); err != nil {
 				return EnrollmentGroupResponseValidationError{
 					field:  fmt.Sprintf("Enrollments[%v]", idx),
@@ -769,29 +459,8 @@ func (m *EnrollmentGroupResponse) validate(all bool) error {
 
 	}
 
-	if len(errors) > 0 {
-		return EnrollmentGroupResponseMultiError(errors)
-	}
-
 	return nil
 }
-
-// EnrollmentGroupResponseMultiError is an error wrapping multiple validation
-// errors returned by EnrollmentGroupResponse.ValidateAll() if the designated
-// constraints aren't met.
-type EnrollmentGroupResponseMultiError []error
-
-// Error returns a concatenation of all the error messages it wraps.
-func (m EnrollmentGroupResponseMultiError) Error() string {
-	var msgs []string
-	for _, err := range m {
-		msgs = append(msgs, err.Error())
-	}
-	return strings.Join(msgs, "; ")
-}
-
-// AllErrors returns a list of validation violation errors.
-func (m EnrollmentGroupResponseMultiError) AllErrors() []error { return m }
 
 // EnrollmentGroupResponseValidationError is the validation error returned by
 // EnrollmentGroupResponse.Validate if the designated constraints aren't met.
@@ -851,104 +520,49 @@ var _ interface {
 
 // Validate checks the field values on CreateEnrollmentGroupRequest with the
 // rules defined in the proto definition for this message. If any rules are
-// violated, the first error encountered is returned, or nil if there are no violations.
+// violated, an error is returned.
 func (m *CreateEnrollmentGroupRequest) Validate() error {
-	return m.validate(false)
-}
-
-// ValidateAll checks the field values on CreateEnrollmentGroupRequest with the
-// rules defined in the proto definition for this message. If any rules are
-// violated, the result is a list of violation errors wrapped in
-// CreateEnrollmentGroupRequestMultiError, or nil if none found.
-func (m *CreateEnrollmentGroupRequest) ValidateAll() error {
-	return m.validate(true)
-}
-
-func (m *CreateEnrollmentGroupRequest) validate(all bool) error {
 	if m == nil {
 		return nil
 	}
 
-	var errors []error
-
 	if l := utf8.RuneCountInString(m.GetId()); l < 1 || l > 127 {
-		err := CreateEnrollmentGroupRequestValidationError{
+		return CreateEnrollmentGroupRequestValidationError{
 			field:  "Id",
 			reason: "value length must be between 1 and 127 runes, inclusive",
 		}
-		if !all {
-			return err
-		}
-		errors = append(errors, err)
 	}
 
 	if l := utf8.RuneCountInString(m.GetName()); l < 1 || l > 255 {
-		err := CreateEnrollmentGroupRequestValidationError{
+		return CreateEnrollmentGroupRequestValidationError{
 			field:  "Name",
 			reason: "value length must be between 1 and 255 runes, inclusive",
 		}
-		if !all {
-			return err
-		}
-		errors = append(errors, err)
 	}
 
 	if utf8.RuneCountInString(m.GetDescription()) > 1023 {
-		err := CreateEnrollmentGroupRequestValidationError{
+		return CreateEnrollmentGroupRequestValidationError{
 			field:  "Description",
 			reason: "value length must be at most 1023 runes",
 		}
-		if !all {
-			return err
-		}
-		errors = append(errors, err)
 	}
 
 	if l := utf8.RuneCountInString(m.GetModelName()); l < 1 || l > 255 {
-		err := CreateEnrollmentGroupRequestValidationError{
+		return CreateEnrollmentGroupRequestValidationError{
 			field:  "ModelName",
 			reason: "value length must be between 1 and 255 runes, inclusive",
 		}
-		if !all {
-			return err
-		}
-		errors = append(errors, err)
 	}
 
 	if l := utf8.RuneCountInString(m.GetUserId()); l < 1 || l > 127 {
-		err := CreateEnrollmentGroupRequestValidationError{
+		return CreateEnrollmentGroupRequestValidationError{
 			field:  "UserId",
 			reason: "value length must be between 1 and 127 runes, inclusive",
 		}
-		if !all {
-			return err
-		}
-		errors = append(errors, err)
-	}
-
-	if len(errors) > 0 {
-		return CreateEnrollmentGroupRequestMultiError(errors)
 	}
 
 	return nil
 }
-
-// CreateEnrollmentGroupRequestMultiError is an error wrapping multiple
-// validation errors returned by CreateEnrollmentGroupRequest.ValidateAll() if
-// the designated constraints aren't met.
-type CreateEnrollmentGroupRequestMultiError []error
-
-// Error returns a concatenation of all the error messages it wraps.
-func (m CreateEnrollmentGroupRequestMultiError) Error() string {
-	var msgs []string
-	for _, err := range m {
-		msgs = append(msgs, err.Error())
-	}
-	return strings.Join(msgs, "; ")
-}
-
-// AllErrors returns a list of validation violation errors.
-func (m CreateEnrollmentGroupRequestMultiError) AllErrors() []error { return m }
 
 // CreateEnrollmentGroupRequestValidationError is the validation error returned
 // by CreateEnrollmentGroupRequest.Validate if the designated constraints
@@ -1009,60 +623,21 @@ var _ interface {
 
 // Validate checks the field values on AppendEnrollmentGroupRequest with the
 // rules defined in the proto definition for this message. If any rules are
-// violated, the first error encountered is returned, or nil if there are no violations.
+// violated, an error is returned.
 func (m *AppendEnrollmentGroupRequest) Validate() error {
-	return m.validate(false)
-}
-
-// ValidateAll checks the field values on AppendEnrollmentGroupRequest with the
-// rules defined in the proto definition for this message. If any rules are
-// violated, the result is a list of violation errors wrapped in
-// AppendEnrollmentGroupRequestMultiError, or nil if none found.
-func (m *AppendEnrollmentGroupRequest) ValidateAll() error {
-	return m.validate(true)
-}
-
-func (m *AppendEnrollmentGroupRequest) validate(all bool) error {
 	if m == nil {
 		return nil
 	}
 
-	var errors []error
-
 	if l := utf8.RuneCountInString(m.GetGroupId()); l < 1 || l > 127 {
-		err := AppendEnrollmentGroupRequestValidationError{
+		return AppendEnrollmentGroupRequestValidationError{
 			field:  "GroupId",
 			reason: "value length must be between 1 and 127 runes, inclusive",
 		}
-		if !all {
-			return err
-		}
-		errors = append(errors, err)
-	}
-
-	if len(errors) > 0 {
-		return AppendEnrollmentGroupRequestMultiError(errors)
 	}
 
 	return nil
 }
-
-// AppendEnrollmentGroupRequestMultiError is an error wrapping multiple
-// validation errors returned by AppendEnrollmentGroupRequest.ValidateAll() if
-// the designated constraints aren't met.
-type AppendEnrollmentGroupRequestMultiError []error
-
-// Error returns a concatenation of all the error messages it wraps.
-func (m AppendEnrollmentGroupRequestMultiError) Error() string {
-	var msgs []string
-	for _, err := range m {
-		msgs = append(msgs, err.Error())
-	}
-	return strings.Join(msgs, "; ")
-}
-
-// AllErrors returns a list of validation violation errors.
-func (m AppendEnrollmentGroupRequestMultiError) AllErrors() []error { return m }
 
 // AppendEnrollmentGroupRequestValidationError is the validation error returned
 // by AppendEnrollmentGroupRequest.Validate if the designated constraints
@@ -1123,40 +698,18 @@ var _ interface {
 
 // Validate checks the field values on DeleteEnrollmentRequest with the rules
 // defined in the proto definition for this message. If any rules are
-// violated, the first error encountered is returned, or nil if there are no violations.
+// violated, an error is returned.
 func (m *DeleteEnrollmentRequest) Validate() error {
-	return m.validate(false)
-}
-
-// ValidateAll checks the field values on DeleteEnrollmentRequest with the
-// rules defined in the proto definition for this message. If any rules are
-// violated, the result is a list of violation errors wrapped in
-// DeleteEnrollmentRequestMultiError, or nil if none found.
-func (m *DeleteEnrollmentRequest) ValidateAll() error {
-	return m.validate(true)
-}
-
-func (m *DeleteEnrollmentRequest) validate(all bool) error {
 	if m == nil {
 		return nil
 	}
 
-	var errors []error
-
 	if err := m._validateUuid(m.GetId()); err != nil {
-		err = DeleteEnrollmentRequestValidationError{
+		return DeleteEnrollmentRequestValidationError{
 			field:  "Id",
 			reason: "value must be a valid UUID",
 			cause:  err,
 		}
-		if !all {
-			return err
-		}
-		errors = append(errors, err)
-	}
-
-	if len(errors) > 0 {
-		return DeleteEnrollmentRequestMultiError(errors)
 	}
 
 	return nil
@@ -1169,23 +722,6 @@ func (m *DeleteEnrollmentRequest) _validateUuid(uuid string) error {
 
 	return nil
 }
-
-// DeleteEnrollmentRequestMultiError is an error wrapping multiple validation
-// errors returned by DeleteEnrollmentRequest.ValidateAll() if the designated
-// constraints aren't met.
-type DeleteEnrollmentRequestMultiError []error
-
-// Error returns a concatenation of all the error messages it wraps.
-func (m DeleteEnrollmentRequestMultiError) Error() string {
-	var msgs []string
-	for _, err := range m {
-		msgs = append(msgs, err.Error())
-	}
-	return strings.Join(msgs, "; ")
-}
-
-// AllErrors returns a list of validation violation errors.
-func (m DeleteEnrollmentRequestMultiError) AllErrors() []error { return m }
 
 // DeleteEnrollmentRequestValidationError is the validation error returned by
 // DeleteEnrollmentRequest.Validate if the designated constraints aren't met.
@@ -1245,60 +781,21 @@ var _ interface {
 
 // Validate checks the field values on DeleteEnrollmentGroupRequest with the
 // rules defined in the proto definition for this message. If any rules are
-// violated, the first error encountered is returned, or nil if there are no violations.
+// violated, an error is returned.
 func (m *DeleteEnrollmentGroupRequest) Validate() error {
-	return m.validate(false)
-}
-
-// ValidateAll checks the field values on DeleteEnrollmentGroupRequest with the
-// rules defined in the proto definition for this message. If any rules are
-// violated, the result is a list of violation errors wrapped in
-// DeleteEnrollmentGroupRequestMultiError, or nil if none found.
-func (m *DeleteEnrollmentGroupRequest) ValidateAll() error {
-	return m.validate(true)
-}
-
-func (m *DeleteEnrollmentGroupRequest) validate(all bool) error {
 	if m == nil {
 		return nil
 	}
 
-	var errors []error
-
 	if l := utf8.RuneCountInString(m.GetId()); l < 1 || l > 127 {
-		err := DeleteEnrollmentGroupRequestValidationError{
+		return DeleteEnrollmentGroupRequestValidationError{
 			field:  "Id",
 			reason: "value length must be between 1 and 127 runes, inclusive",
 		}
-		if !all {
-			return err
-		}
-		errors = append(errors, err)
-	}
-
-	if len(errors) > 0 {
-		return DeleteEnrollmentGroupRequestMultiError(errors)
 	}
 
 	return nil
 }
-
-// DeleteEnrollmentGroupRequestMultiError is an error wrapping multiple
-// validation errors returned by DeleteEnrollmentGroupRequest.ValidateAll() if
-// the designated constraints aren't met.
-type DeleteEnrollmentGroupRequestMultiError []error
-
-// Error returns a concatenation of all the error messages it wraps.
-func (m DeleteEnrollmentGroupRequestMultiError) Error() string {
-	var msgs []string
-	for _, err := range m {
-		msgs = append(msgs, err.Error())
-	}
-	return strings.Join(msgs, "; ")
-}
-
-// AllErrors returns a list of validation violation errors.
-func (m DeleteEnrollmentGroupRequestMultiError) AllErrors() []error { return m }
 
 // DeleteEnrollmentGroupRequestValidationError is the validation error returned
 // by DeleteEnrollmentGroupRequest.Validate if the designated constraints
@@ -1359,51 +856,25 @@ var _ interface {
 
 // Validate checks the field values on UpdateEnrollmentRequest with the rules
 // defined in the proto definition for this message. If any rules are
-// violated, the first error encountered is returned, or nil if there are no violations.
+// violated, an error is returned.
 func (m *UpdateEnrollmentRequest) Validate() error {
-	return m.validate(false)
-}
-
-// ValidateAll checks the field values on UpdateEnrollmentRequest with the
-// rules defined in the proto definition for this message. If any rules are
-// violated, the result is a list of violation errors wrapped in
-// UpdateEnrollmentRequestMultiError, or nil if none found.
-func (m *UpdateEnrollmentRequest) ValidateAll() error {
-	return m.validate(true)
-}
-
-func (m *UpdateEnrollmentRequest) validate(all bool) error {
 	if m == nil {
 		return nil
 	}
 
-	var errors []error
-
 	if err := m._validateUuid(m.GetId()); err != nil {
-		err = UpdateEnrollmentRequestValidationError{
+		return UpdateEnrollmentRequestValidationError{
 			field:  "Id",
 			reason: "value must be a valid UUID",
 			cause:  err,
 		}
-		if !all {
-			return err
-		}
-		errors = append(errors, err)
 	}
 
 	if utf8.RuneCountInString(m.GetDescription()) > 1023 {
-		err := UpdateEnrollmentRequestValidationError{
+		return UpdateEnrollmentRequestValidationError{
 			field:  "Description",
 			reason: "value length must be at most 1023 runes",
 		}
-		if !all {
-			return err
-		}
-		errors = append(errors, err)
-	}
-
-	if len(errors) > 0 {
-		return UpdateEnrollmentRequestMultiError(errors)
 	}
 
 	return nil
@@ -1416,23 +887,6 @@ func (m *UpdateEnrollmentRequest) _validateUuid(uuid string) error {
 
 	return nil
 }
-
-// UpdateEnrollmentRequestMultiError is an error wrapping multiple validation
-// errors returned by UpdateEnrollmentRequest.ValidateAll() if the designated
-// constraints aren't met.
-type UpdateEnrollmentRequestMultiError []error
-
-// Error returns a concatenation of all the error messages it wraps.
-func (m UpdateEnrollmentRequestMultiError) Error() string {
-	var msgs []string
-	for _, err := range m {
-		msgs = append(msgs, err.Error())
-	}
-	return strings.Join(msgs, "; ")
-}
-
-// AllErrors returns a list of validation violation errors.
-func (m UpdateEnrollmentRequestMultiError) AllErrors() []error { return m }
 
 // UpdateEnrollmentRequestValidationError is the validation error returned by
 // UpdateEnrollmentRequest.Validate if the designated constraints aren't met.
@@ -1492,71 +946,28 @@ var _ interface {
 
 // Validate checks the field values on UpdateEnrollmentGroupRequest with the
 // rules defined in the proto definition for this message. If any rules are
-// violated, the first error encountered is returned, or nil if there are no violations.
+// violated, an error is returned.
 func (m *UpdateEnrollmentGroupRequest) Validate() error {
-	return m.validate(false)
-}
-
-// ValidateAll checks the field values on UpdateEnrollmentGroupRequest with the
-// rules defined in the proto definition for this message. If any rules are
-// violated, the result is a list of violation errors wrapped in
-// UpdateEnrollmentGroupRequestMultiError, or nil if none found.
-func (m *UpdateEnrollmentGroupRequest) ValidateAll() error {
-	return m.validate(true)
-}
-
-func (m *UpdateEnrollmentGroupRequest) validate(all bool) error {
 	if m == nil {
 		return nil
 	}
 
-	var errors []error
-
 	if l := utf8.RuneCountInString(m.GetId()); l < 1 || l > 127 {
-		err := UpdateEnrollmentGroupRequestValidationError{
+		return UpdateEnrollmentGroupRequestValidationError{
 			field:  "Id",
 			reason: "value length must be between 1 and 127 runes, inclusive",
 		}
-		if !all {
-			return err
-		}
-		errors = append(errors, err)
 	}
 
 	if l := utf8.RuneCountInString(m.GetName()); l < 1 || l > 127 {
-		err := UpdateEnrollmentGroupRequestValidationError{
+		return UpdateEnrollmentGroupRequestValidationError{
 			field:  "Name",
 			reason: "value length must be between 1 and 127 runes, inclusive",
 		}
-		if !all {
-			return err
-		}
-		errors = append(errors, err)
-	}
-
-	if len(errors) > 0 {
-		return UpdateEnrollmentGroupRequestMultiError(errors)
 	}
 
 	return nil
 }
-
-// UpdateEnrollmentGroupRequestMultiError is an error wrapping multiple
-// validation errors returned by UpdateEnrollmentGroupRequest.ValidateAll() if
-// the designated constraints aren't met.
-type UpdateEnrollmentGroupRequestMultiError []error
-
-// Error returns a concatenation of all the error messages it wraps.
-func (m UpdateEnrollmentGroupRequestMultiError) Error() string {
-	var msgs []string
-	for _, err := range m {
-		msgs = append(msgs, err.Error())
-	}
-	return strings.Join(msgs, "; ")
-}
-
-// AllErrors returns a list of validation violation errors.
-func (m UpdateEnrollmentGroupRequestMultiError) AllErrors() []error { return m }
 
 // UpdateEnrollmentGroupRequestValidationError is the validation error returned
 // by UpdateEnrollmentGroupRequest.Validate if the designated constraints
@@ -1617,71 +1028,28 @@ var _ interface {
 
 // Validate checks the field values on RemoveEnrollmentsRequest with the rules
 // defined in the proto definition for this message. If any rules are
-// violated, the first error encountered is returned, or nil if there are no violations.
+// violated, an error is returned.
 func (m *RemoveEnrollmentsRequest) Validate() error {
-	return m.validate(false)
-}
-
-// ValidateAll checks the field values on RemoveEnrollmentsRequest with the
-// rules defined in the proto definition for this message. If any rules are
-// violated, the result is a list of violation errors wrapped in
-// RemoveEnrollmentsRequestMultiError, or nil if none found.
-func (m *RemoveEnrollmentsRequest) ValidateAll() error {
-	return m.validate(true)
-}
-
-func (m *RemoveEnrollmentsRequest) validate(all bool) error {
 	if m == nil {
 		return nil
 	}
 
-	var errors []error
-
 	if l := utf8.RuneCountInString(m.GetGroupId()); l < 1 || l > 127 {
-		err := RemoveEnrollmentsRequestValidationError{
+		return RemoveEnrollmentsRequestValidationError{
 			field:  "GroupId",
 			reason: "value length must be between 1 and 127 runes, inclusive",
 		}
-		if !all {
-			return err
-		}
-		errors = append(errors, err)
 	}
 
 	if len(m.GetEnrollmentIds()) < 1 {
-		err := RemoveEnrollmentsRequestValidationError{
+		return RemoveEnrollmentsRequestValidationError{
 			field:  "EnrollmentIds",
 			reason: "value must contain at least 1 item(s)",
 		}
-		if !all {
-			return err
-		}
-		errors = append(errors, err)
-	}
-
-	if len(errors) > 0 {
-		return RemoveEnrollmentsRequestMultiError(errors)
 	}
 
 	return nil
 }
-
-// RemoveEnrollmentsRequestMultiError is an error wrapping multiple validation
-// errors returned by RemoveEnrollmentsRequest.ValidateAll() if the designated
-// constraints aren't met.
-type RemoveEnrollmentsRequestMultiError []error
-
-// Error returns a concatenation of all the error messages it wraps.
-func (m RemoveEnrollmentsRequestMultiError) Error() string {
-	var msgs []string
-	for _, err := range m {
-		msgs = append(msgs, err.Error())
-	}
-	return strings.Join(msgs, "; ")
-}
-
-// AllErrors returns a list of validation violation errors.
-func (m RemoveEnrollmentsRequestMultiError) AllErrors() []error { return m }
 
 // RemoveEnrollmentsRequestValidationError is the validation error returned by
 // RemoveEnrollmentsRequest.Validate if the designated constraints aren't met.
